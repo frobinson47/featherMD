@@ -131,6 +131,17 @@ export function initEditor(domEl, onChange, onCursorActivity) {
     focus: () => editorView.focus(),
     getScrollDOM: () => editorView.scrollDOM,
     requestMeasure: () => { if (editorView) editorView.requestMeasure(); },
+    wrapSelection,
+    toggleLinePrefix,
+    insertLink,
+    insertImage,
+    insertTable,
+    setSelection: (from, to = from) => {
+      if (!editorView) return;
+      const docLen = editorView.state.doc.length;
+      const clamp = (n) => Math.max(0, Math.min(docLen, n));
+      editorView.dispatch({ selection: { anchor: clamp(from), head: clamp(to) } });
+    },
   };
 }
 
@@ -286,6 +297,145 @@ function searchAndHighlight(text) {
       return;
     }
   }
+}
+
+// ---- Markdown formatting toolbar commands (AUTO-010) ----
+
+/**
+ * Wrap the current selection in `before`/`after` markers (bold, italic,
+ * strikethrough, inline code). With no selection, inserts `before + placeholder
+ * + after` and selects the placeholder so typing replaces it immediately; with
+ * a selection, the wrapped text stays selected so the marker pair is visible.
+ */
+function wrapSelection(before, after, placeholder = '') {
+  if (!editorView) return;
+  const { from, to } = editorView.state.selection.main;
+  const selectedText = editorView.state.sliceDoc(from, to);
+  const inner = selectedText || placeholder;
+  const insert = before + inner + after;
+  const innerFrom = from + before.length;
+  const innerTo = innerFrom + inner.length;
+
+  editorView.dispatch({
+    changes: { from, to, insert },
+    selection: { anchor: innerFrom, head: innerTo },
+    scrollIntoView: true,
+  });
+  editorView.focus();
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Toggle a line-start prefix (heading, blockquote, list marker) across every
+ * line touched by the current selection. Whether the action adds or removes
+ * is decided by the FIRST touched line: if it already has the prefix, every
+ * touched line has it stripped; otherwise every touched line gets it added.
+ *
+ * `detectPattern` (optional) matches a variable-width existing prefix to
+ * strip — used for ordered lists ("12. " as well as "1. "). Without it, the
+ * literal `prefixText` itself is the only thing detected/stripped.
+ *
+ * Ordered-list toggling always adds a literal "1. " per line rather than
+ * renumbering sequentially — a deliberate MVP simplification, not a bug.
+ */
+function toggleLinePrefix(prefixText, detectPattern) {
+  if (!editorView) return;
+  const pattern = detectPattern || new RegExp('^' + escapeRegExp(prefixText));
+  const { from, to } = editorView.state.selection.main;
+  const doc = editorView.state.doc;
+  const startLine = doc.lineAt(from);
+  const endLine = doc.lineAt(to);
+
+  const shouldRemove = pattern.test(startLine.text);
+  const changes = [];
+
+  for (let lineNo = startLine.number; lineNo <= endLine.number; lineNo++) {
+    const line = doc.line(lineNo);
+    if (shouldRemove) {
+      const match = pattern.exec(line.text);
+      if (match) {
+        changes.push({ from: line.from, to: line.from + match[0].length, insert: '' });
+      }
+    } else {
+      changes.push({ from: line.from, to: line.from, insert: prefixText });
+    }
+  }
+
+  if (changes.length === 0) return;
+  editorView.dispatch({ changes });
+  editorView.focus();
+}
+
+/**
+ * Insert a Markdown link. The selected text (or a "link text" placeholder)
+ * becomes the link label; the "url" placeholder is selected afterward so the
+ * user can type the destination immediately.
+ */
+function insertLink() {
+  if (!editorView) return;
+  const { from, to } = editorView.state.selection.main;
+  const selectedText = editorView.state.sliceDoc(from, to);
+  const label = selectedText || 'link text';
+  const url = 'url';
+  const insert = `[${label}](${url})`;
+  const urlFrom = from + 1 + label.length + 2;
+  const urlTo = urlFrom + url.length;
+
+  editorView.dispatch({
+    changes: { from, to, insert },
+    selection: { anchor: urlFrom, head: urlTo },
+    scrollIntoView: true,
+  });
+  editorView.focus();
+}
+
+/**
+ * Insert a Markdown image. Same shape as insertLink() with the alt-text/URL
+ * roles, and the "url" placeholder selected for immediate typing.
+ */
+function insertImage() {
+  if (!editorView) return;
+  const { from, to } = editorView.state.selection.main;
+  const selectedText = editorView.state.sliceDoc(from, to);
+  const alt = selectedText || 'alt text';
+  const url = 'url';
+  const insert = `![${alt}](${url})`;
+  const urlFrom = from + 2 + alt.length + 2;
+  const urlTo = urlFrom + url.length;
+
+  editorView.dispatch({
+    changes: { from, to, insert },
+    selection: { anchor: urlFrom, head: urlTo },
+    scrollIntoView: true,
+  });
+  editorView.focus();
+}
+
+/**
+ * Insert a default 2x2 GFM table skeleton at the cursor. Ensures the table
+ * starts on its own blank line (GFM tables must not follow other content on
+ * the same line) unless the cursor is already alone on an empty line.
+ */
+function insertTable() {
+  if (!editorView) return;
+  const { from, to } = editorView.state.selection.main;
+  const line = editorView.state.doc.lineAt(from);
+  const alreadyOnBlankLine = from === line.from && line.text.trim().length === 0;
+  const prefix = alreadyOnBlankLine ? '' : '\n\n';
+  const table = '| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n';
+  const insert = prefix + table;
+  const headerFrom = from + insert.indexOf('Header 1');
+  const headerTo = headerFrom + 'Header 1'.length;
+
+  editorView.dispatch({
+    changes: { from, to, insert },
+    selection: { anchor: headerFrom, head: headerTo },
+    scrollIntoView: true,
+  });
+  editorView.focus();
 }
 
 function selectAndScroll(from, to) {

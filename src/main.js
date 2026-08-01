@@ -39,6 +39,7 @@ import {
     updateRecentFilesList,
 } from './ui/toolbar.js';
 import { initShortcutsModal, initRecentFilesModal, openRecentFilesModal } from './ui/dialogs.js';
+import { initMarkdownToolbar } from './ui/markdown-toolbar.js';
 import { initStatusBar, updateTitleBar, updateStatusBar, updateCursorPosition } from './ui/status-bar.js';
 import { initDividerDrag } from './ui/divider.js';
 
@@ -71,6 +72,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initKeyboardShortcuts(editorAPI);
     initShortcutsModal();
     initRecentFilesModal();
+    initMarkdownToolbar(editorAPI);
 
     // ISSUE-16: Triple-click in preview jumps to the source in the editor.
     previewAPI.initPreviewClickToEdit((text) => {

@@ -413,6 +413,7 @@ body.fullscreen-preview #preview-content .fmd-mermaid {
   /* Strip the app chrome — the print is the rendered document, nothing else. */
   #header-bar,
   #status-bar,
+  #markdown-toolbar,
   #editor-pane,
   #divider {
     display: none !important;

@@ -28,6 +28,56 @@
   opacity: 1;
 }
 
+/* ---- Markdown Formatting Toolbar (AUTO-010) ---- */
+#markdown-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+  user-select: none;
+  z-index: 90;
+}
+
+.md-tool-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
+}
+
+.md-tool-btn:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+
+.md-tool-btn:active {
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+.md-tool-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.md-tool-separator {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
 /* Print styles - hide everything except preview */
 @media print {
   :root {

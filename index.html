@@ -410,6 +410,114 @@
         </div>
     </div>
 
+    <!-- Markdown Formatting Toolbar -->
+    <div id="markdown-toolbar" role="toolbar" aria-label="Markdown formatting">
+        <button type="button" class="md-tool-btn" data-action="format-bold" aria-label="Bold" title="Bold">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 4h4a3 3 0 0 1 0 6H5z" />
+                <path d="M5 10h5a3 3 0 0 1 0 6H5z" />
+            </svg>
+        </button>
+        <button type="button" class="md-tool-btn" data-action="format-italic" aria-label="Italic" title="Italic">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="11" y1="3" x2="7" y2="3" />
+                <line x1="9" y1="13" x2="5" y2="13" />
+                <line x1="10" y1="3" x2="6" y2="13" />
+            </svg>
+        </button>
+        <button type="button" class="md-tool-btn" data-action="format-strikethrough" aria-label="Strikethrough"
+            title="Strikethrough">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5.5 4.5c0-1.1 1.1-2 2.5-2s2.5.9 2.5 2" />
+                <path d="M6 13.5c0 1.1 1 1.8 2 1.8s2.5-.7 2.5-2" />
+                <line x1="2" y1="8" x2="14" y2="8" />
+            </svg>
+        </button>
+        <button type="button" class="md-tool-btn" data-action="format-code" aria-label="Inline code"
+            title="Inline code">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="5.5,4 2,8 5.5,12" />
+                <polyline points="10.5,4 14,8 10.5,12" />
+            </svg>
+        </button>
+
+        <div class="md-tool-separator"></div>
+
+        <button type="button" class="md-tool-btn" data-action="format-link" aria-label="Link" title="Link">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6.7 9.3a2.6 2.6 0 0 0 3.6 0l1.7-1.7a2.6 2.6 0 0 0-3.6-3.6l-.9.9" />
+                <path d="M9.3 6.7a2.6 2.6 0 0 0-3.6 0L4 8.4a2.6 2.6 0 0 0 3.6 3.6l.9-.9" />
+            </svg>
+        </button>
+        <button type="button" class="md-tool-btn" data-action="format-image" aria-label="Image" title="Image">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="12" height="10" rx="1.5" />
+                <circle cx="5.5" cy="6.5" r="1.1" />
+                <path d="M2.5 11.5 6 8l2 2 3.5-3.5 2 2" />
+            </svg>
+        </button>
+
+        <div class="md-tool-separator"></div>
+
+        <button type="button" class="md-tool-btn" data-action="format-heading" aria-label="Heading" title="Heading">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="3" x2="4" y2="13" />
+                <line x1="12" y1="3" x2="12" y2="13" />
+                <line x1="4" y1="8" x2="12" y2="8" />
+            </svg>
+        </button>
+        <button type="button" class="md-tool-btn" data-action="format-unordered-list" aria-label="Bulleted list"
+            title="Bulleted list">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="3" cy="4" r="1" fill="currentColor" stroke="none" />
+                <circle cx="3" cy="8" r="1" fill="currentColor" stroke="none" />
+                <circle cx="3" cy="12" r="1" fill="currentColor" stroke="none" />
+                <line x1="6.5" y1="4" x2="14" y2="4" />
+                <line x1="6.5" y1="8" x2="14" y2="8" />
+                <line x1="6.5" y1="12" x2="14" y2="12" />
+            </svg>
+        </button>
+        <button type="button" class="md-tool-btn" data-action="format-ordered-list" aria-label="Numbered list"
+            title="Numbered list">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <text x="1" y="6" font-size="5.5" font-family="inherit" fill="currentColor" stroke="none">1</text>
+                <text x="1" y="10.3" font-size="5.5" font-family="inherit" fill="currentColor" stroke="none">2</text>
+                <text x="1" y="14.6" font-size="5.5" font-family="inherit" fill="currentColor" stroke="none">3</text>
+                <line x1="6.5" y1="4" x2="14" y2="4" />
+                <line x1="6.5" y1="8" x2="14" y2="8" />
+                <line x1="6.5" y1="12" x2="14" y2="12" />
+            </svg>
+        </button>
+        <button type="button" class="md-tool-btn" data-action="format-blockquote" aria-label="Blockquote"
+            title="Blockquote">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 4.5a2 2 0 0 0-2 2v1.3a2 2 0 0 0 2 2h.6v.7a2 2 0 0 1-1.8 2" />
+                <path d="M12 4.5a2 2 0 0 0-2 2v1.3a2 2 0 0 0 2 2h.6v.7a2 2 0 0 1-1.8 2" />
+            </svg>
+        </button>
+
+        <div class="md-tool-separator"></div>
+
+        <button type="button" class="md-tool-btn" data-action="format-table" aria-label="Table" title="Table">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="12" height="10" rx="1" />
+                <line x1="2" y1="7" x2="14" y2="7" />
+                <line x1="7" y1="3" x2="7" y2="13" />
+            </svg>
+        </button>
+    </div>
+
     <!-- Main Split Container -->
     <div id="split-container">
         <div id="editor-pane"></div>
@@ -609,6 +717,7 @@
     <!-- Status Bar -->
     <div id="status-bar">
         <span id="status-filepath" title="">Untitled</span>
+        <span id="status-branding">Forked and Modified by FMR Digital, LLC</span>
         <div id="status-right">
             <span id="status-selected" style="display: none;"></span>
             <span class="status-separator" id="status-selected-separator" style="display: none;">|</span>

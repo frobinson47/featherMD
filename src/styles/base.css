@@ -622,6 +622,7 @@ body {
 
 /* ---- Status Bar ---- */
 #status-bar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -641,6 +642,30 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 50%;
+}
+
+/* Fork attribution, true-centered independent of the left/right cluster
+   widths. pointer-events:none so it never intercepts clicks on the
+   version link or status segments it happens to sit above at narrow
+   widths. Hidden below --statusbar-branding-hide-width, where it would
+   start overlapping status-filepath/status-right at the app's 600px
+   tauri.conf.json minWidth. */
+#status-branding {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  #status-branding {
+    display: none;
+  }
 }
 
 #status-right {
@@ -1009,6 +1034,7 @@ body.resizing {
    Distraction-free, preview-only surface: hide all chrome and let the preview
    pane fill the window. Toggled by adding `fullscreen-preview` to <body>. */
 body.fullscreen-preview #header-bar,
+body.fullscreen-preview #markdown-toolbar,
 body.fullscreen-preview #editor-pane,
 body.fullscreen-preview #divider,
 body.fullscreen-preview #status-bar {
