@@ -1,0 +1,8 @@
+# Autonomous Forge repository defaults.
+# Any value here fills in a command flag only when it was omitted on the
+# command line — explicit flags always win. Delete or leave a key unset to
+# fall back to that command's built-in default.
+[defaults]
+# plan = ".ai/AUTONOMOUS_PLAN.md"
+# policy = ".forge/policy.md"
+# cmd = "PYTHONPATH=src python -m pytest"

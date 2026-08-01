@@ -63,3 +63,11 @@ desktop.ini
 .agents
 ~
 analytics
+# Autonomous Forge session files
+.forge/sessions/
+.forge/.lock
+.forge/runs/
+
+# Local Claude Code / GrayMatter tool state (not part of the project)
+.claude/
+.graymatter/
