@@ -1,4 +1,4 @@
-name: Runner Smoke Test (temporary, AUTO-012)
+name: Runner Smoke Test (temporary, AUTO-012, retry after enabling Actions)
 
 on:
   push:
