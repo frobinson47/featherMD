@@ -227,7 +227,7 @@ Notes: User confirmed 2026-08-01: 4-6 tabs, top-below-menu-bar position, last-ta
 
 ### AUTO-016 — Tabs Phase 2: per-tab file I/O with single active-file watcher
 Priority: P1
-Status: TODO
+Status: DONE
 
 Goal: Wire `src/core/file-io.js`'s open/save/save-as/new operations to the active tab from AUTO-015 instead of a single global document, and keep the Rust file-watcher watching only the currently active tab's file — switching tabs re-points the watcher rather than scaling it to track every open tab.
 Why it matters: Per `.ai/DECISIONS.md` "Tabs feature scope" (2026-08-01), the user explicitly called N-way Rust watcher scaling "overkill" — this keeps `src-tauri/src/lib.rs`'s existing single-watcher architecture (`Mutex<Option<RecommendedWatcher>>`) unchanged, at the cost of only detecting external changes to the focused tab's file.

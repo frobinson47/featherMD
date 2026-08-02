@@ -79,3 +79,11 @@
 - Validation completed: `npm run lint` clean. `npm run test` — 348/348 passing (35 new). `forge diff-check` clean apart from the pre-existing untouched `docs/` file. Live-verified in the running app via direct `element.click()` JS execution (the browser-automation tool's synthetic clicks were unreliable in this environment and are noted as a tooling limitation, not an app defect) — new tab, switch-with-content-restoration, close-background-tab, and close-last-tab-falls-back-to-fresh-Untitled all confirmed working end to end.
 - Commit hash: none (pending user review)
 - Follow-up notes: `state.js`'s global `currentFilePath`/`isDirty`/`lineEnding` are not yet per-tab — opening a real file lands on whichever tab is focused without updating that tab's pill/title. Documented, intentional Phase-1 gap; AUTO-016 closes it.
+
+## 2026-08-02 — AUTO-016
+
+- Task ID: AUTO-016
+- Summary: Tabs Phase 2 — wired real file I/O to the per-tab model. `openFile()`/`onRecentFileSelect()` now create a new tab per file (via new `loadFileIntoNewTab()`) instead of replacing the active tab's content; `newFile()` still resets the active tab in place. New `watchActiveTabFile()` re-points the Rust watcher to whichever tab is active on every switch. New `confirmDiscardChangesForTab(tabId)` guards closing a specific (possibly background) dirty tab, switching to it first if needed so the save pipeline operates on the right content. Kept `state.js`'s HMR-resistant globals as a synced mirror of the active tab (`syncGlobalsFromActiveTab()`) rather than proxying them through tabsStore, to avoid losing their dev-mode HMR-survival property.
+- Validation completed: `npm run lint` clean. `npm run test` — 362/362 passing (14 net new/rewritten). `forge diff-check` clean apart from the pre-existing untouched `docs/` file; confirmed no `src-tauri/**` changes, matching the task's explicit scope. Live-verified create→close-tab end-to-end in a browser session.
+- Commit hash: none (pending user review)
+- Follow-up notes: No live dirty-tab-close confirmation was exercised in the browser (couldn't reliably type into CodeMirror via the automation tool to make a tab genuinely dirty) — covered instead by 12 unit tests against the exact guard logic. CLI-arg/single-instance file-open paths still replace the active tab in place; that's AUTO-017's explicit job.

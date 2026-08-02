@@ -22,6 +22,9 @@ import {
     removeRecentFile,
     clearRecentFiles,
     confirmDiscardChanges,
+    confirmDiscardChangesForTab,
+    syncGlobalsFromActiveTab,
+    watchActiveTabFile,
 } from './core/file-io.js';
 import { initKeyboardShortcuts, updateZoomBadge } from './core/keyboard.js';
 import { initScrollSync, setSyncEnabled } from './core/sync.js';
@@ -86,6 +89,7 @@ window.addEventListener('DOMContentLoaded', () => {
         tabsStore.getAllTabs(),
         tabsStore.getActiveTabId(),
     );
+    syncGlobalsFromActiveTab();
 
     // ISSUE-16: Triple-click in preview jumps to the source in the editor.
     previewAPI.initPreviewClickToEdit((text) => {
@@ -416,12 +420,12 @@ function onContentChange(text, isProgrammatic) {
     updateStatusBar(text);
 
     if (isProgrammatic) {
-        isDirty = false;
         tabsStore.setActiveTabDirty(false);
+        syncGlobalsFromActiveTab();
         updateTitleBar();
     } else if (!isDirty) {
-        isDirty = true;
         tabsStore.setActiveTabDirty(true);
+        syncGlobalsFromActiveTab();
         updateTitleBar();
     }
 }
@@ -441,18 +445,26 @@ function handleSwitchTab(tabId) {
     editorAPI.applyEditorState(tab.editorState);
     editorAPI.setScrollRatio(tab.scrollRatio || 0);
     editorAPI.focus();
+    syncGlobalsFromActiveTab();
+    updateTitleBar();
     updateStatusBar(editorAPI.getValue());
     previewAPI.renderMarkdown(editorAPI.getValue());
+    watchActiveTabFile();
 }
 
-function handleCloseTab(tabId) {
+async function handleCloseTab(tabId) {
+    if (!(await confirmDiscardChangesForTab(tabId))) return;
+
     const fresh = tabsStore.closeTab(tabId, () => editorAPI.createDocState(''));
     if (!fresh) return;
     editorAPI.applyEditorState(fresh.editorState);
     editorAPI.setScrollRatio(fresh.scrollRatio || 0);
     editorAPI.focus();
+    syncGlobalsFromActiveTab();
+    updateTitleBar();
     updateStatusBar(editorAPI.getValue());
     previewAPI.renderMarkdown(editorAPI.getValue());
+    watchActiveTabFile();
 }
 
 function handleNewTab() {
@@ -463,8 +475,11 @@ function handleNewTab() {
     editorAPI.applyEditorState(tab.editorState);
     editorAPI.setScrollRatio(0);
     editorAPI.focus();
+    syncGlobalsFromActiveTab();
+    updateTitleBar();
     updateStatusBar('');
     previewAPI.renderMarkdown('');
+    watchActiveTabFile();
 }
 
 // ---- Apply persisted preferences on startup ----

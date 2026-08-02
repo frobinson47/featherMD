@@ -1,12 +1,14 @@
 // ========================================
 // Feather MD -- File I/O + State Contract Tests
 // ========================================
-// AUTO-003: pins down the contract between src/core/state.js's globals
-// (currentFilePath, isDirty, lineEnding, isSaving) and src/core/file-io.js's
-// use of them -- in particular the isSaving echo-suppression window
-// (PERF-12) and confirmDiscardChanges()'s branching -- so a future change to
-// either file, or to the tabs refactor built on top of them, has a test
-// harness to diff against.
+// AUTO-003 established this suite; AUTO-016 rewrote it for the tab-aware
+// file-io.js -- every operation now targets tabsStore's active tab, with
+// the legacy currentFilePath/isDirty/lineEnding globals kept in sync via
+// syncGlobalsFromActiveTab() rather than being the source of truth
+// themselves. Still covers the same core contract: confirmDiscardChanges()
+// branching, loadFileContent()'s state resets, newFile()'s discard-guard
+// short-circuit, saveFileAs()'s watcher re-subscription, and the isSaving
+// 500ms echo-suppression window (PERF-12).
 //
 // UI-layer dependencies (dialogs/status-bar/toolbar) are mocked: this suite
 // is about the state contract, not DOM rendering.
@@ -53,6 +55,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { setTauri } from '../../src/core/state.js';
 import { config } from '../../src/core/config.js';
+import * as tabsStore from '../../src/core/tabs.js';
 import {
   initFileIO,
   saveFile,
@@ -62,6 +65,7 @@ import {
   removeRecentFile,
   clearRecentFiles,
   confirmDiscardChanges,
+  syncGlobalsFromActiveTab,
 } from '../../src/core/file-io.js';
 
 function makeEditorAPI(initialValue = '') {
@@ -70,14 +74,19 @@ function makeEditorAPI(initialValue = '') {
     getValue: vi.fn(() => value),
     setValue: vi.fn((v) => { value = v; }),
     focus: vi.fn(),
+    createDocState: vi.fn((text = '') => ({ __fakeState: true, text })),
+    getEditorState: vi.fn(() => ({ __fakeState: true, text: value })),
+    applyEditorState: vi.fn((state) => { value = state?.text ?? value; }),
+    getScrollRatio: vi.fn(() => 0),
+    setScrollRatio: vi.fn(),
   };
 }
 
 beforeEach(() => {
   setTauri(false);
-  currentFilePath = null;
-  isDirty = false;
-  lineEnding = 'LF';
+  tabsStore._resetForTests();
+  tabsStore.initTabs({ __fakeState: true, text: '' });
+  syncGlobalsFromActiveTab();
   isSaving = false;
   config.recentFiles = [];
   showUnsavedDialog.mockReset();
@@ -112,8 +121,8 @@ describe('State contract -- confirmDiscardChanges()', () => {
 
   it('saves and returns true when dirty and the user chooses save (native path)', async () => {
     setTauri(true);
-    currentFilePath = 'C:\\notes\\a.md';
-    isDirty = true;
+    tabsStore.setActiveTabFile('C:\\notes\\a.md', true, 'LF');
+    syncGlobalsFromActiveTab();
     initFileIO(makeEditorAPI('content'));
     showUnsavedDialog.mockResolvedValue('save');
 
@@ -129,7 +138,8 @@ describe('State contract -- loadFileContent()', () => {
   it('sets currentFilePath, detects LF line ending, and clears the dirty flag', () => {
     const editorAPI = makeEditorAPI();
     initFileIO(editorAPI);
-    isDirty = true;
+    tabsStore.setActiveTabFile('C:\\notes\\prior.md', true, 'CRLF');
+    syncGlobalsFromActiveTab();
 
     loadFileContent('C:\\notes\\a.md', 'line one\nline two');
 
@@ -174,30 +184,29 @@ describe('State contract -- newFile()', () => {
   it('resets state to a clean, path-less buffer when the buffer was already clean', async () => {
     const editorAPI = makeEditorAPI('old content');
     initFileIO(editorAPI);
-    currentFilePath = 'C:\\notes\\a.md';
-    isDirty = false;
-    lineEnding = 'CRLF';
+    tabsStore.setActiveTabFile('C:\\notes\\a.md', false, 'CRLF');
+    syncGlobalsFromActiveTab();
 
     await newFile();
 
     expect(currentFilePath).toBeNull();
     expect(isDirty).toBe(false);
     expect(lineEnding).toBe('LF');
-    expect(editorAPI.setValue).toHaveBeenCalledWith('');
+    expect(editorAPI.applyEditorState).toHaveBeenCalled();
   });
 
   it('does NOT reset state when dirty and the user cancels the discard prompt', async () => {
     const editorAPI = makeEditorAPI('unsaved work');
     initFileIO(editorAPI);
-    currentFilePath = 'C:\\notes\\a.md';
-    isDirty = true;
+    tabsStore.setActiveTabFile('C:\\notes\\a.md', true, 'LF');
+    syncGlobalsFromActiveTab();
     showUnsavedDialog.mockResolvedValue('cancel');
 
     await newFile();
 
     // Guard must short-circuit before touching any state.
     expect(currentFilePath).toBe('C:\\notes\\a.md');
-    expect(editorAPI.setValue).not.toHaveBeenCalled();
+    expect(editorAPI.applyEditorState).not.toHaveBeenCalled();
   });
 });
 
@@ -210,7 +219,8 @@ describe('State contract -- saveFile() isSaving echo-suppression window', () => 
 
   it('sets isSaving during the write and holds it true for the full echo window after completion', async () => {
     setTauri(true);
-    currentFilePath = 'C:\\notes\\a.md';
+    tabsStore.setActiveTabFile('C:\\notes\\a.md', false, 'LF');
+    syncGlobalsFromActiveTab();
     const editorAPI = makeEditorAPI('saved content');
     initFileIO(editorAPI);
 
@@ -231,20 +241,20 @@ describe('State contract -- saveFile() isSaving echo-suppression window', () => 
 
   it('still clears isSaving after the echo window even if the write fails', async () => {
     setTauri(true);
-    currentFilePath = 'C:\\notes\\a.md';
+    tabsStore.setActiveTabFile('C:\\notes\\a.md', true, 'LF');
+    syncGlobalsFromActiveTab();
     initFileIO(makeEditorAPI('content'));
 
     writeTextFile.mockRejectedValue(new Error('disk full'));
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    isDirty = true;
     const savePromise = saveFile();
     await vi.advanceTimersByTimeAsync(0);
     await savePromise;
 
     // A failed write must not silently clear the dirty flag (data loss), but
     // the echo-suppression window's cleanup must still run regardless.
-    expect(isDirty).toBe(true);
+    expect(tabsStore.getActiveTab().isDirty).toBe(true);
     await vi.advanceTimersByTimeAsync(500);
     expect(isSaving).toBe(false);
 
@@ -257,7 +267,8 @@ describe('State contract -- saveFile() isSaving echo-suppression window', () => 
 describe('State contract -- saveFileAs() watcher re-subscription', () => {
   it('re-points the file watcher only when Save As targets a different path than before', async () => {
     setTauri(true);
-    currentFilePath = 'C:\\notes\\old.md';
+    tabsStore.setActiveTabFile('C:\\notes\\old.md', false, 'LF');
+    syncGlobalsFromActiveTab();
     initFileIO(makeEditorAPI('content'));
 
     saveDialog.mockResolvedValue('C:\\notes\\new.md');
@@ -267,6 +278,18 @@ describe('State contract -- saveFileAs() watcher re-subscription', () => {
     expect(currentFilePath).toBe('C:\\notes\\new.md');
     expect(isDirty).toBe(false);
     expect(invoke).toHaveBeenCalledWith('watch_file', { path: 'C:\\notes\\new.md' });
+  });
+
+  it('does not re-invoke watch_file when Save As targets the same path', async () => {
+    setTauri(true);
+    tabsStore.setActiveTabFile('C:\\notes\\same.md', false, 'LF');
+    syncGlobalsFromActiveTab();
+    initFileIO(makeEditorAPI('content'));
+
+    saveDialog.mockResolvedValue('C:\\notes\\same.md');
+    await saveFileAs();
+
+    expect(invoke).not.toHaveBeenCalledWith('watch_file', expect.anything());
   });
 });
 

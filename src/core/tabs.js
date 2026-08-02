@@ -12,11 +12,15 @@
 // Closing the last remaining tab replaces it with a fresh empty Untitled tab
 // rather than leaving zero tabs open.
 //
-// File I/O, the Rust file watcher, and the unsaved-changes guard on close are
-// deliberately NOT wired here -- see AUTO-016. Tabs in this phase are
-// in-memory Untitled documents only; src/core/state.js's global
-// currentFilePath/isDirty/lineEnding remain the source of truth for the
-// single "currently open file" concept until AUTO-016 makes that per-tab.
+// AUTO-016: src/core/file-io.js is the caller for file-backed tabs -- it
+// reads path/isDirty/lineEnding via getActiveTab()/getTab() and writes them
+// via setActiveTabFile()/setActiveTabDirty(), then mirrors the active tab's
+// values onto src/core/state.js's legacy globals (currentFilePath/isDirty/
+// lineEnding) so status-bar.js and other unchanged consumers keep working
+// without themselves becoming tab-aware. The Rust file watcher tracks only
+// the active tab's file (file-io.js's watchActiveTabFile()) -- background
+// tabs' external changes are not detected until switched to, a deliberate,
+// documented limitation (see .ai/DECISIONS.md).
 
 export const MAX_TABS = 6;
 
@@ -25,12 +29,17 @@ let activeTabId = null;
 let nextTabId = 1;
 let onTabsChangedCallback = null;
 
-function nextUntitledTitle() {
-  const used = new Set(tabs.filter((t) => !t.path).map((t) => t.title));
+function nextUntitledTitle(excludeId) {
+  const used = new Set(tabs.filter((t) => !t.path && t.id !== excludeId).map((t) => t.title));
   if (!used.has('Untitled')) return 'Untitled';
   let n = 2;
   while (used.has(`Untitled ${n}`)) n++;
   return `Untitled ${n}`;
+}
+
+function basename(path) {
+  if (!path) return '';
+  return path.replace(/\\/g, '/').split('/').pop() || '';
 }
 
 function makeTab(editorState) {
@@ -160,6 +169,22 @@ export function setActiveTabDirty(dirty) {
     tab.isDirty = dirty;
     notify();
   }
+}
+
+/**
+ * Associate the active tab with a real file (AUTO-016): sets path, dirty
+ * flag, and line ending, and derives the tab's title from the path's
+ * basename -- or regenerates a fresh "Untitled"/"Untitled N" title (skipping
+ * this tab itself) when path is null, e.g. on newFile()'s reset.
+ */
+export function setActiveTabFile(path, isDirty, lineEnding) {
+  const tab = getActiveTab();
+  if (!tab) return;
+  tab.path = path || null;
+  tab.title = tab.path ? basename(tab.path) : nextUntitledTitle(tab.id);
+  tab.isDirty = !!isDirty;
+  if (lineEnding) tab.lineEnding = lineEnding;
+  notify();
 }
 
 /** Test-only reset so each test file starts from a clean module state. */
