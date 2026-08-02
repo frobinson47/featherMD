@@ -41,7 +41,7 @@ jobs:
           retention-days: 1
 
   build-linux:
-    runs-on: docker
+    runs-on: linux
     container: node:20-bookworm
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
 
   release:
     needs: [build-windows, build-linux]
-    runs-on: docker
+    runs-on: linux
     container: node:20-bookworm
     steps:
       - uses: actions/checkout@v4
