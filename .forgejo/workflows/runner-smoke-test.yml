@@ -1,0 +1,20 @@
+name: Runner Smoke Test (temporary, AUTO-012)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.forgejo/workflows/runner-smoke-test.yml'
+
+jobs:
+  smoke-test:
+    runs-on: windows
+    steps:
+      - name: Report environment
+        run: |
+          echo "OS: $env:OS"
+          rustc --version
+          cargo --version
+          node --version
+          npm --version
