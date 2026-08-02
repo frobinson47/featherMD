@@ -44,6 +44,27 @@ Possible rework if Forgejo runners can't handle the Windows build — the fallba
 
 ---
 
+## 2026-08-02 — AUTO-012 runner verification: no Windows runner existed, building one
+
+### Decision
+Confirmed via a direct, read-only query against Forgejo's Postgres (`action_runner` table, on Scooby) that exactly one Actions runner is registered instance-wide: `hetzner-1`, labels `["self-hosted","docker"]`, `owner_id`/`repo_id` both 0 (instance-scoped, available to any repo). It is a Docker-based runner and cannot natively produce a Windows NSIS installer. User chose to stand up a new, dedicated Windows runner on Optimus (this dev machine) rather than fall back to GitHub Actions or defer the pipeline. Forgejo does not publish an official Windows binary for `forgejo-runner` (only linux-amd64/linux-arm64 release assets exist for v12.13.2) — building from source with the Go toolchain already present on Optimus (`go1.26.2 windows/amd64`, `GOOS=windows GOARCH=amd64 go build`) instead.
+
+### Context
+AUTO-012's own scope required stopping and reporting rather than silently choosing a fallback once "not confirmed" was established — this entry records that checkpoint and the user's explicit choice once presented with the finding (2026-08-02).
+
+### Alternatives considered
+1. **Keep GitHub Actions for builds** — simplest, no new infra, but keeps a hard dependency on GitHub for the fork's own releases.
+2. **Stand up a Windows Forgejo runner** (selected) — keeps the whole pipeline on Forgejo infra, at the cost of Optimus needing to stay on/reachable for releases and sharing the box with interactive dev work.
+3. **Defer entirely** — leave AUTO-012 TODO; not selected.
+
+### Reasoning
+User's explicit choice, 2026-08-02, after being shown the runner-registry finding.
+
+### Trade-offs accepted
+Optimus becomes a load-bearing part of the release pipeline (must be on/reachable to cut a release) rather than a disposable CI agent. The `forgejo-runner.exe` binary running on it is self-built (not an official signed release artifact) since Forgejo doesn't ship one for Windows — acceptable since the source is pinned to a tagged release (`v12.13.2`) and built directly from Forgejo's own repo, not a third party's.
+
+---
+
 ## 2026-08-01 — Tabs feature scope: capped tabs, single-file watcher only
 
 ### Decision
