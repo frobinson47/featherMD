@@ -214,7 +214,7 @@ Notes: Thread's API surface reviewed 2026-08-01 directly from its server source.
 
 ### AUTO-015 — Tabs Phase 1: multi-document state model and tab bar UI shell
 Priority: P1
-Status: TODO
+Status: DONE
 
 Goal: Replace the single-document global state (`src/core/state.js`'s `currentFilePath`/`isDirty`/`lineEnding`) with an in-memory list of open-document records (path, CodeMirror `EditorState`, dirty flag, line ending), capped at 4-6 concurrent tabs, plus a tab bar UI row below the existing `#header-bar` with active-tab indication, close (×) buttons, and a "+" new-tab action.
 Why it matters: Foundational piece every later tabs task depends on. See `.ai/DECISIONS.md` "Tabs feature scope" (2026-08-01): 4-6 tabs is the realistic cap (no overflow-scroll UI needed), tabs sit at the top below the menu bar (conventional editor pattern, reuses the existing `#header-bar` layout).

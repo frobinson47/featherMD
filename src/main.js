@@ -28,6 +28,8 @@ import { initScrollSync, setSyncEnabled } from './core/sync.js';
 
 import { initEditor } from './editor/editor.js';
 import { initPreview } from './preview/preview.js';
+import * as tabsStore from './core/tabs.js';
+import { initTabBar, render as renderTabBar } from './ui/tab-bar.js';
 
 import { initThemes, setTheme } from './ui/themes.js';
 import {
@@ -76,6 +78,14 @@ window.addEventListener('DOMContentLoaded', () => {
     initRecentFilesModal();
     initSendToSettingsModal();
     initMarkdownToolbar(editorAPI);
+
+    // AUTO-015: wrap the editor's initial state as tab 1, then render the bar.
+    tabsStore.initTabs(editorAPI.getEditorState(), renderTabBar);
+    initTabBar(
+        { onSwitchTab: handleSwitchTab, onCloseTab: handleCloseTab, onNewTab: handleNewTab },
+        tabsStore.getAllTabs(),
+        tabsStore.getActiveTabId(),
+    );
 
     // ISSUE-16: Triple-click in preview jumps to the source in the editor.
     previewAPI.initPreviewClickToEdit((text) => {
@@ -407,11 +417,54 @@ function onContentChange(text, isProgrammatic) {
 
     if (isProgrammatic) {
         isDirty = false;
+        tabsStore.setActiveTabDirty(false);
         updateTitleBar();
     } else if (!isDirty) {
         isDirty = true;
+        tabsStore.setActiveTabDirty(true);
         updateTitleBar();
     }
+}
+
+// ---- Tab switching (AUTO-015 Phase 1) ----
+// File I/O, the Rust watcher, and the unsaved-changes guard on close are NOT
+// wired here yet -- see AUTO-016. src/core/state.js's global currentFilePath/
+// isDirty/lineEnding remain authoritative for "the currently open file" until
+// that lands; tabsStore's per-tab isDirty exists only to drive the tab
+// pill's dirty dot in this phase, tracked alongside (not replacing) the
+// global for now.
+
+function handleSwitchTab(tabId) {
+    tabsStore.saveActiveTabSnapshot(editorAPI.getEditorState(), editorAPI.getScrollRatio());
+    const tab = tabsStore.switchTab(tabId);
+    if (!tab) return;
+    editorAPI.applyEditorState(tab.editorState);
+    editorAPI.setScrollRatio(tab.scrollRatio || 0);
+    editorAPI.focus();
+    updateStatusBar(editorAPI.getValue());
+    previewAPI.renderMarkdown(editorAPI.getValue());
+}
+
+function handleCloseTab(tabId) {
+    const fresh = tabsStore.closeTab(tabId, () => editorAPI.createDocState(''));
+    if (!fresh) return;
+    editorAPI.applyEditorState(fresh.editorState);
+    editorAPI.setScrollRatio(fresh.scrollRatio || 0);
+    editorAPI.focus();
+    updateStatusBar(editorAPI.getValue());
+    previewAPI.renderMarkdown(editorAPI.getValue());
+}
+
+function handleNewTab() {
+    if (!tabsStore.canCreateTab()) return;
+    tabsStore.saveActiveTabSnapshot(editorAPI.getEditorState(), editorAPI.getScrollRatio());
+    const tab = tabsStore.createTab(editorAPI.createDocState(''));
+    if (!tab) return;
+    editorAPI.applyEditorState(tab.editorState);
+    editorAPI.setScrollRatio(0);
+    editorAPI.focus();
+    updateStatusBar('');
+    previewAPI.renderMarkdown('');
 }
 
 // ---- Apply persisted preferences on startup ----

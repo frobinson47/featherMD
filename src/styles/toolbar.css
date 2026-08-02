@@ -78,6 +78,108 @@
   flex-shrink: 0;
 }
 
+/* ---- Tab Bar (AUTO-015) ---- */
+#tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  padding: 0 6px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+  overflow-x: auto;
+  overflow-y: hidden;
+  user-select: none;
+  z-index: 90;
+}
+
+.tab-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  max-width: 160px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
+}
+
+.tab-item-btn:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+}
+
+.tab-item-btn.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.tab-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-item-dirty-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.tab-item-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: background var(--transition-fast) ease, opacity var(--transition-fast) ease;
+}
+
+.tab-item-close:hover {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  opacity: 1;
+}
+
+#tab-new-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
+}
+
+#tab-new-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+
+#tab-new-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 /* Print styles - hide everything except preview */
 @media print {
   :root {

@@ -1064,6 +1064,7 @@ body.resizing {
    Distraction-free, preview-only surface: hide all chrome and let the preview
    pane fill the window. Toggled by adding `fullscreen-preview` to <body>. */
 body.fullscreen-preview #header-bar,
+body.fullscreen-preview #tab-bar,
 body.fullscreen-preview #markdown-toolbar,
 body.fullscreen-preview #editor-pane,
 body.fullscreen-preview #divider,

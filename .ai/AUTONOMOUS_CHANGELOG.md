@@ -71,3 +71,11 @@
 - Validation completed: `npm run lint` clean. `npm run test` — 313/313 passing (10 new tests). `forge diff-check` flagged `tauri.conf.json` as expected (the approved CSP change) alongside the pre-existing untouched `docs/` file.
 - Commit hash: none (pending user review)
 - Follow-up notes: Thread currently has no authentication layer (confirmed against its own source) — this integration doesn't change that exposure, just gives featherMD a client for it. If Thread adds auth later, this integration needs a corresponding update (cross-repo dependency, not actionable here). No end-to-end test against the real Thread instance was performed.
+
+## 2026-08-02 — AUTO-015
+
+- Task ID: AUTO-015
+- Summary: Tabs Phase 1 — multi-document state model (`src/core/tabs.js`, capped at 6) and tab bar UI (`src/ui/tab-bar.js`, new `#tab-bar` row). Refactored `editor.js` to build a fresh `EditorState` per tab and swap the single `EditorView` between them via `view.setState()`. File I/O and the discard-guard remain deferred to AUTO-016 by design; today's tabs are in-memory only.
+- Validation completed: `npm run lint` clean. `npm run test` — 348/348 passing (35 new). `forge diff-check` clean apart from the pre-existing untouched `docs/` file. Live-verified in the running app via direct `element.click()` JS execution (the browser-automation tool's synthetic clicks were unreliable in this environment and are noted as a tooling limitation, not an app defect) — new tab, switch-with-content-restoration, close-background-tab, and close-last-tab-falls-back-to-fresh-Untitled all confirmed working end to end.
+- Commit hash: none (pending user review)
+- Follow-up notes: `state.js`'s global `currentFilePath`/`isDirty`/`lineEnding` are not yet per-tab — opening a real file lands on whichever tab is focused without updating that tab's pill/title. Documented, intentional Phase-1 gap; AUTO-016 closes it.

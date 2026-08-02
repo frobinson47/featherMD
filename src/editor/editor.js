@@ -30,6 +30,93 @@ let debounceTimer = null;
 // classification is always read from the exact change that triggered it.
 const programmaticChange = Annotation.define();
 
+// Built once and shared across every tab's EditorState (AUTO-015): the
+// listener body reads onChangeCallback/onCursorActivityCallback fresh on
+// each firing rather than capturing them at construction time, so a single
+// instance is safe to reuse in every buildExtensions() call -- no per-tab
+// listener duplication, and callbacks stay correct regardless of which
+// tab's state is currently live in the one shared EditorView.
+const updateListener = EditorView.updateListener.of((update) => {
+  if (update.docChanged) {
+    const isProgrammatic = update.transactions.some((tr) => tr.annotation(programmaticChange));
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      if (onChangeCallback) {
+        onChangeCallback(update.state.doc.toString(), isProgrammatic);
+      }
+    }, 150);
+  }
+  if (update.selectionSet && onCursorActivityCallback) {
+    onCursorActivityCallback();
+  }
+});
+
+/**
+ * The standard extension set every tab's EditorState is built with. Shared
+ * Compartment instances (module-level) are safe to reuse across multiple
+ * EditorStates -- each state independently holds its own compartment
+ * configuration, so per-tab line-numbers/wrapping/tab-size reconfiguration
+ * (setLineNumbers/setLineWrapping/setTabSize) keeps working correctly no
+ * matter which tab's state is currently active in the shared EditorView.
+ */
+function buildExtensions() {
+  return [
+    lineNumbersCompartment.of(lineNumbers()),
+    lineWrappingCompartment.of(EditorView.lineWrapping),
+    tabSizeCompartment.of([EditorState.tabSize.of(4), indentUnit.of('    ')]),
+    history(),
+    foldGutter(),
+    drawSelection(),
+    dropCursor(),
+    indentOnInput(),
+    syntaxHighlighting(classHighlighter, { fallback: true }),
+    bracketMatching(),
+    closeBrackets(),
+    autocompletion(),
+    rectangularSelection(),
+    crosshairCursor(),
+    highlightActiveLine(),
+    highlightActiveLineGutter(),
+    highlightSelectionMatches(),
+    markdown({ base: markdownLanguage, codeLanguages: languages }),
+    keymap.of([
+      ...closeBracketsKeymap,
+      ...defaultKeymap,
+      ...searchKeymap,
+      ...historyKeymap,
+      ...foldKeymap,
+      {
+        key: 'Tab',
+        run: (view) => {
+          if (view.state.readOnly) return false;
+          if (view.state.selection.ranges.some(r => !r.empty)) {
+            return indentMore(view);
+          }
+          const size = view.state.tabSize || 4;
+          const insert = ' '.repeat(size);
+          view.dispatch(view.state.replaceSelection(insert));
+          return true;
+        },
+        shift: indentLess,
+      },
+    ]),
+    updateListener,
+    EditorView.theme({
+      '&': { height: '100%' },
+      '.cm-scroller': { overflow: 'auto' },
+    }),
+  ];
+}
+
+/**
+ * Build a fresh, standalone EditorState for a new tab (AUTO-015). Not yet
+ * mounted anywhere -- pass it to applyEditorState() to display it, or store
+ * it on a tabs.js tab record for later.
+ */
+function createDocState(text = '') {
+  return EditorState.create({ doc: text, extensions: buildExtensions() });
+}
+
 /**
  * Initialize the CodeMirror 6 editor
  * @param {HTMLElement} domEl - Container element
@@ -41,75 +128,8 @@ export function initEditor(domEl, onChange, onCursorActivity) {
   onChangeCallback = onChange;
   onCursorActivityCallback = onCursorActivity || null;
 
-  // Single updateListener handles both doc changes (debounced) and selection
-  // changes (event-driven cursor-position updates).
-  const updateListener = EditorView.updateListener.of((update) => {
-    if (update.docChanged) {
-      const isProgrammatic = update.transactions.some((tr) => tr.annotation(programmaticChange));
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        if (onChangeCallback) {
-          onChangeCallback(update.state.doc.toString(), isProgrammatic);
-        }
-      }, 150);
-    }
-    if (update.selectionSet && onCursorActivityCallback) {
-      onCursorActivityCallback();
-    }
-  });
-
-  const state = EditorState.create({
-    doc: '',
-    extensions: [
-      lineNumbersCompartment.of(lineNumbers()),
-      lineWrappingCompartment.of(EditorView.lineWrapping),
-      tabSizeCompartment.of([EditorState.tabSize.of(4), indentUnit.of('    ')]),
-      history(),
-      foldGutter(),
-      drawSelection(),
-      dropCursor(),
-      indentOnInput(),
-      syntaxHighlighting(classHighlighter, { fallback: true }),
-      bracketMatching(),
-      closeBrackets(),
-      autocompletion(),
-      rectangularSelection(),
-      crosshairCursor(),
-      highlightActiveLine(),
-      highlightActiveLineGutter(),
-      highlightSelectionMatches(),
-      markdown({ base: markdownLanguage, codeLanguages: languages }),
-      keymap.of([
-        ...closeBracketsKeymap,
-        ...defaultKeymap,
-        ...searchKeymap,
-        ...historyKeymap,
-        ...foldKeymap,
-        {
-          key: 'Tab',
-          run: (view) => {
-            if (view.state.readOnly) return false;
-            if (view.state.selection.ranges.some(r => !r.empty)) {
-              return indentMore(view);
-            }
-            const size = view.state.tabSize || 4;
-            const insert = ' '.repeat(size);
-            view.dispatch(view.state.replaceSelection(insert));
-            return true;
-          },
-          shift: indentLess,
-        },
-      ]),
-      updateListener,
-      EditorView.theme({
-        '&': { height: '100%' },
-        '.cm-scroller': { overflow: 'auto' },
-      }),
-    ],
-  });
-
   editorView = new EditorView({
-    state,
+    state: createDocState(''),
     parent: domEl,
   });
 
@@ -141,6 +161,13 @@ export function initEditor(domEl, onChange, onCursorActivity) {
       const docLen = editorView.state.doc.length;
       const clamp = (n) => Math.max(0, Math.min(docLen, n));
       editorView.dispatch({ selection: { anchor: clamp(from), head: clamp(to) } });
+    },
+    // ---- Tab-switching primitives (AUTO-015) ----
+    createDocState,
+    getEditorState: () => (editorView ? editorView.state : null),
+    applyEditorState: (state) => {
+      if (!editorView || !state) return;
+      editorView.setState(state);
     },
   };
 }
