@@ -31,11 +31,6 @@ jobs:
           apt-get update
           apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: 'npm'
-
       - uses: https://github.com/dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
@@ -79,10 +74,6 @@ jobs:
           mkdir -p release/windows release/linux
           cp artifacts/bundle-windows/* release/windows/ 2>/dev/null || true
           cp artifacts/bundle-linux/* release/linux/ 2>/dev/null || true
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
 
       - name: Build the merged updater manifest
         run: node scripts/build-latest-json.mjs release "${{ github.ref_name }}"
