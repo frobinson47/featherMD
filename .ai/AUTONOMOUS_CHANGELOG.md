@@ -93,5 +93,13 @@
 - Task ID: AUTO-017
 - Summary: Tabs Phase 3 (final) — new keyboard shortcuts (Ctrl+T new tab, Ctrl+W close active tab, Ctrl+Tab/Ctrl+Shift+Tab cycle), added to the Shortcuts modal. Fixed `open-file-from-args` (single-instance file forwarding) to route through the tab model via new `tabsStore.findTabByPath()` (focus an already-open tab) or `loadFileIntoNewTab()` (open in a new tab) instead of clobbering whatever tab was focused. The startup `get_initial_file` path needed no changes — already correct since AUTO-016.
 - Validation completed: `npm run lint` clean. `npm run test` — 379/379 passing (17 new). `forge diff-check` clean apart from the pre-existing untouched `docs/` file. Live-verified all three new shortcuts end-to-end via dispatched `KeyboardEvent`s in the running app.
-- Commit hash: none (pending user review)
+- Commit hash: b3fa84f
 - Follow-up notes: This completes the tabs feature — AUTO-015, AUTO-016, and AUTO-017 are all done. `findTabByPath()` doesn't resolve symlinks (documented scope cut). Remaining roadmap: fork identity/release pipeline (AUTO-011/012) and the remaining risk audits (AUTO-004/006/007/008).
+
+## 2026-08-02 — AUTO-011
+
+- Task ID: AUTO-011
+- Summary: Fork identity — changed `src-tauri/tauri.conf.json`'s `identifier` to `com.fmrdigital.feathermd`, generated a new Tauri/minisign signing keypair and wired the new public key into `updater.pubkey`. Private key + password stored in a newly-created Infisical project (`featherMD`), never committed or fully printed — generated to a local scratchpad, `scp`'d to `fmrdigital`, pushed to Infisical, then deleted from both locations. Also created a scoped `featherMD-app` machine identity for future automated signing, verified working end-to-end.
+- Validation completed: `cargo check` in `src-tauri` — clean. `npm run lint` clean. `npm run test` — 379/379 passing, no regression. `forge diff-check` flagged `tauri.conf.json` as expected (human-approval-required, pre-approved 2026-08-01) alongside the pre-existing untouched `docs/` file. Diff grepped for secret patterns — clean.
+- Commit hash: none (pending user review)
+- Follow-up notes: featherMD is now a 17th Infisical app project (wasn't among the documented ~16). `updater.endpoints` intentionally untouched — that's AUTO-012, which depends on this task's new pubkey and is unblocked to proceed. AUTO-012 still needs Forgejo Actions runner-capability confirmed before a full pipeline is written; initial API probes for a runner-listing endpoint returned 404 and need a different verification approach.

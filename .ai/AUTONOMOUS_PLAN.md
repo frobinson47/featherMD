@@ -162,7 +162,7 @@ Notes: Action list confirmed by user 2026-08-01: bold, italic, strikethrough, co
 
 ### AUTO-011 — Fork identity: new app identifier and signing key
 Priority: P1
-Status: TODO
+Status: DONE
 
 Goal: Change `src-tauri/tauri.conf.json`'s `identifier` from `com.feathermd.app` to a distinct FMR Digital identifier (e.g. `com.fmrdigital.feathermd`), generate a new Tauri/minisign signing keypair, and store the private key + password in Infisical per the project's standard secrets workflow — without yet touching the update endpoint (that's AUTO-012).
 Why it matters: See `.ai/DECISIONS.md` "Fork identity: rebrand rather than repoint" (2026-08-01) — the fork is getting its own release identity rather than sharing Windows install identity with upstream.

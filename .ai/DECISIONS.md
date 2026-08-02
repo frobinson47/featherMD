@@ -62,3 +62,24 @@ The app's current architecture is single-document throughout: one global `curren
 
 ### Trade-offs accepted
 External edits to a background tab's file won't be detected until the user switches to that tab (no live reload-prompt for unfocused tabs). This is a documented, intentional limitation, not a bug — worth a one-line mention in the README/changelog when shipped so it isn't reported as one later.
+
+---
+
+## 2026-08-02 — AUTO-011 execution: new Infisical project for featherMD, signing key stored there
+
+### Decision
+Created a new, genuinely-net-new Infisical project (`featherMD`, workspace id `40d1f8ce-ad84-456d-b189-fa707f81f39a`) rather than reusing an existing app project, and stored the new Tauri/minisign signing keypair's private key + password there (`prod` environment, keys `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`), with a scoped `featherMD-app` machine identity (viewer role on the project) for future automated signing use.
+
+### Context
+Global Infisical policy lists ~16 existing app projects and says not to create new ones unless the app is genuinely net-new — featherMD wasn't on that list. Creating a new project also requires the org-admin machine identity (`claude-scaffold`) to have project access, which normally needs a manual UI assignment step for a brand-new project (per the Infisical wiring runbook's GOTCHA) — except `claude-scaffold` turned out to already have implicit access as the project's creator via the API, so no manual UI step was actually needed this time.
+
+### Alternatives considered
+1. **Local break-glass file only** — simplest, but leaves the private key without the durable, access-controlled storage every other app's secrets get.
+2. **Show the key/password to the user directly in chat** — avoids infra work entirely, but pushes storage responsibility onto an ad hoc location instead of the standard system.
+3. **Create the Infisical project now** (selected) — matches standing policy for genuinely-new apps, keeps the key in the same system every other app's secrets live in.
+
+### Reasoning
+User explicitly chose "Create Infisical project now" when asked (2026-08-02). Matches the global policy's own carve-out for net-new apps.
+
+### Trade-offs accepted
+featherMD is now its own line item in Infisical (a 17th app project) rather than folded into an existing one — correct per policy, but worth remembering it's a new addition to the "~16 existing projects" count documented in the runbook.
