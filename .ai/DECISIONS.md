@@ -63,6 +63,9 @@ User's explicit choice, 2026-08-02, after being shown the runner-registry findin
 ### Trade-offs accepted
 Optimus becomes a load-bearing part of the release pipeline (must be on/reachable to cut a release) rather than a disposable CI agent. The `forgejo-runner.exe` binary running on it is self-built (not an official signed release artifact) since Forgejo doesn't ship one for Windows — acceptable since the source is pinned to a tagged release (`v12.13.2`) and built directly from Forgejo's own repo, not a third party's.
 
+### Outcome (2026-08-02)
+Runner `optimus-windows` registered instance-wide with labels `windows:host`, `self-hosted:host`, `tauri:host` (explicit `:host` schema so jobs run natively rather than defaulting to Forgejo runner's Docker backend, which Windows can't provide the way Linux does). Installed as an NSSM-wrapped Windows Service (`ForgejoRunner`, auto-start) since `forgejo-runner.exe` doesn't implement the Windows Service Control Manager protocol directly. `~/.cargo/bin` was added to the machine-wide `PATH` so the LocalSystem service account can find `rustc`/`cargo` (Node was already on the machine PATH). Verified via a throwaway smoke-test workflow (`.forgejo/workflows/runner-smoke-test.yml`, pushed and removed in the same session) that printed real `rustc`/`cargo`/`node`/`npm` versions and completed with `status: success` — confirming native (non-Docker) Windows execution actually works, not just that the runner registered. Also had to flip the repo's `has_actions` flag on via the API (was `false`) before any workflow would trigger at all.
+
 ---
 
 ## 2026-08-01 — Tabs feature scope: capped tabs, single-file watcher only
