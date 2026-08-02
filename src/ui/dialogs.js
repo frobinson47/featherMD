@@ -1,5 +1,7 @@
 // Custom modal dialogs (unsaved-changes prompt, shortcuts help).
 
+import { config, saveConfig } from '../core/config.js';
+
 /**
  * Show the 3-button unsaved-changes dialog.
  *
@@ -109,6 +111,52 @@ export function openRecentFilesModal() {
 export function closeRecentFilesModal() {
   const modal = document.getElementById( 'recent-files-modal' );
   if ( modal ) modal.hidden = true;
+}
+
+// ---- Send To Settings modal (AUTO-013/014) ----
+
+export function initSendToSettingsModal() {
+  const modal = document.getElementById( 'send-to-settings-modal' );
+  const discordInput = document.getElementById( 'discord-webhook-input' );
+  const threadInput = document.getElementById( 'thread-url-input' );
+  const btnSave = document.getElementById( 'send-to-settings-btn-save' );
+  const btnCancel = document.getElementById( 'send-to-settings-btn-cancel' );
+  if ( !modal ) return;
+
+  function close() {
+    modal.hidden = true;
+  }
+
+  btnSave?.addEventListener( 'click', () => {
+    config.discordWebhookUrl = ( discordInput?.value || '' ).trim();
+    config.threadUrl = ( threadInput?.value || '' ).trim();
+    saveConfig();
+    close();
+  } );
+  btnCancel?.addEventListener( 'click', close );
+  modal.addEventListener( 'click', ( e ) => {
+    if ( e.target === modal ) close();
+  } );
+  document.addEventListener( 'keydown', ( e ) => {
+    if ( e.key === 'Escape' && !modal.hidden ) {
+      e.preventDefault();
+      close();
+    }
+  } );
+}
+
+/**
+ * Open the Send To Settings modal, pre-filled with the currently saved values.
+ */
+export function openSendToSettingsModal() {
+  const modal = document.getElementById( 'send-to-settings-modal' );
+  const discordInput = document.getElementById( 'discord-webhook-input' );
+  const threadInput = document.getElementById( 'thread-url-input' );
+  if ( !modal ) return;
+  if ( discordInput ) discordInput.value = config.discordWebhookUrl || '';
+  if ( threadInput ) threadInput.value = config.threadUrl || '';
+  modal.hidden = false;
+  setTimeout( () => discordInput?.focus(), 50 );
 }
 
 export function initRecentFilesModal() {

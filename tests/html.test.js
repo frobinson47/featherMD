@@ -98,21 +98,23 @@ describe('HTML -- Accessibility (ARIA labels)', () => {
 // -- Menu Structure --
 
 describe('HTML -- Menu Bar Structure', () => {
-  it('should have 3 menu buttons (File, View, Style)', () => {
+  it('should have 4 menu buttons (File, View, Style, Send)', () => {
     const menuBtns = doc.querySelectorAll('.menu-btn');
-    expect(menuBtns.length).toBe(3);
+    expect(menuBtns.length).toBe(4);
   });
 
-  it('should have all 3 menu panels', () => {
+  it('should have all 4 menu panels', () => {
     expect(doc.getElementById('file-menu')).toBeTruthy();
     expect(doc.getElementById('view-menu')).toBeTruthy();
     expect(doc.getElementById('style-menu')).toBeTruthy();
+    expect(doc.getElementById('send-menu')).toBeTruthy();
   });
 
   it('should have menu panels starting hidden', () => {
     expect(doc.getElementById('file-menu').hasAttribute('hidden')).toBe(true);
     expect(doc.getElementById('view-menu').hasAttribute('hidden')).toBe(true);
     expect(doc.getElementById('style-menu').hasAttribute('hidden')).toBe(true);
+    expect(doc.getElementById('send-menu').hasAttribute('hidden')).toBe(true);
   });
 
   it('should have 10 theme items in style menu', () => {

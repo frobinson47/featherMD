@@ -23,6 +23,10 @@ const DEFAULTS = Object.freeze({
   // Whether closing/Ctrl+Q hides the app to the system tray (true) or quits outright (false).
   sysTray: true,
   editorMonospace: true,
+  // AUTO-013: Discord webhook URL for "Send to Discord". Empty means unconfigured.
+  discordWebhookUrl: '',
+  // AUTO-014: Thread instance base URL for "Send to Thread". Empty means unconfigured.
+  threadUrl: 'https://thread.fmrdigital.dev',
 });
 
 // RR2-2: the pre-reader-fonts builds defaulted fontFamily to the editor mono
@@ -100,6 +104,8 @@ function sanitizeConfig() {
   if (config.theme !== null && typeof config.theme !== 'string') config.theme = DEFAULTS.theme;
   if (config.fontFamily === LEGACY_MONO_FONT) config.fontFamily = DEFAULTS.fontFamily;
   if (typeof config.fontFamily !== 'string' || !config.fontFamily) config.fontFamily = DEFAULTS.fontFamily;
+  if (typeof config.discordWebhookUrl !== 'string') config.discordWebhookUrl = DEFAULTS.discordWebhookUrl;
+  if (typeof config.threadUrl !== 'string') config.threadUrl = DEFAULTS.threadUrl;
 
   config.recentFiles = Array.isArray(config.recentFiles)
     ? config.recentFiles.filter((p) => typeof p === 'string')

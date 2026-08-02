@@ -55,3 +55,19 @@
 - Validation completed: `npm run lint` clean. `npm run test` — 286/286 passing (254 baseline + 32 new: 20 formatting-command tests + 12 wiring tests). `forge diff-check` confirmed policy compliance. Visual check via `npm run dev` confirmed correct rendering.
 - Commit hash: none (pending user review)
 - Follow-up notes: Live click-through verification in the browser was inconclusive — automation-tool synthetic events didn't appear to reach CodeMirror's editor (suspected tool/editor compatibility gap). Recommend a human manually click each toolbar button once before considering this fully verified end-to-end, even though the underlying logic and wiring are both under test.
+
+## 2026-08-01 — AUTO-013
+
+- Task ID: AUTO-013
+- Summary: Added "Send to Discord" — a new Send menu, a Send To Settings modal (Discord webhook URL field), `src/integrations/discord.js` posting the current document as a `.md` file attachment via Discord's webhook multipart API, and a CSP `connect-src` allowance for `discord.com`/`discordapp.com`.
+- Validation completed: `npm run lint` clean. `npm run test` — 303/303 passing (17 new tests across 3 new files, plus a genuine update to `tests/html.test.js`'s menu-count assertions for the new Send menu). `forge diff-check` flagged `tauri.conf.json` as expected (the approved CSP change) alongside the pre-existing untouched `docs/` file.
+- Commit hash: none (pending user review)
+- Follow-up notes: No end-to-end test against a real Discord webhook or a packaged Tauri build was performed — `fetch` is mocked in tests. Worth a real send-to-Discord smoke test once a build exists.
+
+## 2026-08-01 — AUTO-014
+
+- Task ID: AUTO-014
+- Summary: Added "Send to Thread" — extended the Send menu and Send To Settings modal from AUTO-013 with a Thread URL field (default `https://thread.fmrdigital.dev`), and `src/integrations/thread.js` posting the document as `raw_input` multipart form data to `{threadUrl}/api/notes`, matching Thread's actual server-side validation schema. CSP `connect-src` further widened for the Thread host.
+- Validation completed: `npm run lint` clean. `npm run test` — 313/313 passing (10 new tests). `forge diff-check` flagged `tauri.conf.json` as expected (the approved CSP change) alongside the pre-existing untouched `docs/` file.
+- Commit hash: none (pending user review)
+- Follow-up notes: Thread currently has no authentication layer (confirmed against its own source) — this integration doesn't change that exposure, just gives featherMD a client for it. If Thread adds auth later, this integration needs a corresponding update (cross-repo dependency, not actionable here). No end-to-end test against the real Thread instance was performed.

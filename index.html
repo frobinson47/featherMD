@@ -381,6 +381,23 @@
                 </div>
             </div>
 
+            <!-- Send Menu (AUTO-013/014) -->
+            <div class="menu-dropdown">
+                <button class="menu-btn" data-menu="send-menu">Send</button>
+                <div id="send-menu" class="menu-panel" hidden>
+                    <button class="menu-item" data-action="send-discord">
+                        <span class="menu-item-label">Send to Discord</span>
+                    </button>
+                    <button class="menu-item" data-action="send-thread">
+                        <span class="menu-item-label">Send to Thread</span>
+                    </button>
+                    <div class="menu-separator"></div>
+                    <button class="menu-item" data-action="open-send-to-settings">
+                        <span class="menu-item-label">Send To Settings…</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Zoom Indicator Widget -->
             <button id="zoom-badge" class="zoom-btn" title="Reset zoom to default">100%</button>
         </div>
@@ -692,6 +709,29 @@
                 <h3>Recent Files</h3>
                 <div id="recent-files-list">
                     <div class="menu-item-empty">No recent files</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send To Settings Modal (AUTO-013/014) -->
+    <div id="send-to-settings-modal" class="modal-overlay" hidden>
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3>Send To Settings</h3>
+                <div class="settings-field">
+                    <label for="discord-webhook-input">Discord Webhook URL</label>
+                    <input type="url" id="discord-webhook-input" class="settings-input"
+                        placeholder="https://discord.com/api/webhooks/…" autocomplete="off" spellcheck="false" />
+                </div>
+                <div class="settings-field">
+                    <label for="thread-url-input">Thread URL</label>
+                    <input type="url" id="thread-url-input" class="settings-input"
+                        placeholder="https://thread.fmrdigital.dev" autocomplete="off" spellcheck="false" />
+                </div>
+                <div class="modal-buttons">
+                    <button id="send-to-settings-btn-cancel" class="dialog-btn dialog-btn-secondary">Cancel</button>
+                    <button id="send-to-settings-btn-save" class="dialog-btn dialog-btn-primary">Save</button>
                 </div>
             </div>
         </div>

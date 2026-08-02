@@ -38,8 +38,10 @@ import {
     setActiveTabSize,
     updateRecentFilesList,
 } from './ui/toolbar.js';
-import { initShortcutsModal, initRecentFilesModal, openRecentFilesModal } from './ui/dialogs.js';
+import { initShortcutsModal, initRecentFilesModal, openRecentFilesModal, initSendToSettingsModal, openSendToSettingsModal } from './ui/dialogs.js';
 import { initMarkdownToolbar } from './ui/markdown-toolbar.js';
+import { sendToDiscord, normalizeFilename } from './integrations/discord.js';
+import { sendToThread } from './integrations/thread.js';
 import { initStatusBar, updateTitleBar, updateStatusBar, updateCursorPosition } from './ui/status-bar.js';
 import { initDividerDrag } from './ui/divider.js';
 
@@ -72,6 +74,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initKeyboardShortcuts(editorAPI);
     initShortcutsModal();
     initRecentFilesModal();
+    initSendToSettingsModal();
     initMarkdownToolbar(editorAPI);
 
     // ISSUE-16: Triple-click in preview jumps to the source in the editor.
@@ -198,6 +201,9 @@ async function runBootSequence() {
         onNew: newFile,
         onRecentFiles: openRecentFilesModal,
         onPrint: () => window.print(),
+        onSendDiscord: handleSendToDiscord,
+        onSendThread: handleSendToThread,
+        onOpenSendToSettings: openSendToSettingsModal,
         onSyncToggle: (enabled) => {
             setSyncEnabled(enabled);
             config.syncScroll = enabled;
@@ -478,6 +484,51 @@ function applyEditorFont() {
         document.documentElement.style.setProperty('--font-editor', 'var(--font-reading)');
     }
     setMenuChecked('toggle-editor-monospace', useMonospace);
+}
+
+// ---- Send To Discord (AUTO-013) ----
+async function handleSendToDiscord() {
+    const webhookUrl = (config.discordWebhookUrl || '').trim();
+    if (!webhookUrl) {
+        await notify('No Discord webhook URL configured. Set one via Send → Send To Settings…', 'error');
+        return;
+    }
+    try {
+        const filename = normalizeFilename(currentFilePath);
+        await sendToDiscord(webhookUrl, editorAPI.getValue(), filename);
+        await notify('Sent to Discord.', 'info');
+    } catch (err) {
+        console.error('Failed to send to Discord:', err);
+        await notify(`Failed to send to Discord: ${err.message}`, 'error');
+    }
+}
+
+// ---- Send To Thread (AUTO-014) ----
+async function handleSendToThread() {
+    const threadUrl = (config.threadUrl || '').trim();
+    if (!threadUrl) {
+        await notify('No Thread URL configured. Set one via Send → Send To Settings…', 'error');
+        return;
+    }
+    try {
+        await sendToThread(threadUrl, editorAPI.getValue());
+        await notify('Sent to Thread.', 'info');
+    } catch (err) {
+        console.error('Failed to send to Thread:', err);
+        await notify(`Failed to send to Thread: ${err.message}`, 'error');
+    }
+}
+
+// Simple native-dialog notification with a browser-mode fallback. No toast
+// system exists in this app yet; Tauri's dialog plugin message() box is the
+// lowest-risk way to surface a clear success/error state to the user.
+async function notify(text, kind = 'info') {
+    try {
+        const { message } = await import('@tauri-apps/plugin-dialog');
+        await message(text, { kind });
+    } catch {
+        alert(text);
+    }
 }
 
 async function pingAnalytics() {

@@ -772,6 +772,36 @@ body {
   overflow-y: auto;
 }
 
+/* ---- Send To Settings form (AUTO-013/014) ---- */
+.settings-field {
+  margin: 16px 0;
+}
+
+.settings-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.settings-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.settings-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .shortcuts-table {
   width: 100%;
   border-collapse: collapse;

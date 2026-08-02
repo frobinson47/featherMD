@@ -188,7 +188,7 @@ Notes: User selected "Forgejo Actions (Recommended)" 2026-08-01, contingent on r
 
 ### AUTO-013 — "Send to Discord" webhook integration
 Priority: P2
-Status: TODO
+Status: DONE
 
 Goal: Add a Settings field for a Discord webhook URL (persisted in `config.json`) and a "Send to Discord" action that posts the current file's content to it.
 Why it matters: User-requested integration. Currently the only outbound network call anywhere in the app is the analytics ping — this is new network-access territory requiring an explicit CSP allowance.
@@ -201,7 +201,7 @@ Notes: User confirmed 2026-08-01: in-app webhook URL in Settings, stored in `con
 
 ### AUTO-014 — "Send to Thread" integration
 Priority: P2
-Status: TODO
+Status: DONE
 
 Goal: Add a "Send to Thread" action that posts the current file's content as a new note to the user's Thread instance, defaulting to `https://thread.fmrdigital.dev` (user-confirmed), with the URL editable in Settings the same way as AUTO-013's Discord field.
 Why it matters: User-requested integration with their own app (Thread, `forgejo.familytechlab.com/frank/thread`). Confirmed by direct inspection of Thread's server source (`D:\laragon\www\thread\server\src`): `POST /api/notes` accepts multipart form data with a `raw_input` text field (per `createNoteBodySchema` in `validation.js`), is AI-processed server-side, and — per that repo's own code comment in `settings.js` ("there's no auth layer — see AUTO-051") — currently has no authentication, so this is a plain unauthenticated POST.

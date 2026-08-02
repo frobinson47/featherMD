@@ -86,6 +86,11 @@ export function initToolbar(handlers) {
   wireAction('recent-files', () => { handlers.onRecentFiles(); closeAllMenus(); });
   wireAction('print', () => { handlers.onPrint(); closeAllMenus(); });
 
+  // Send menu (AUTO-013/014)
+  wireAction('send-discord', () => { handlers.onSendDiscord(); closeAllMenus(); });
+  wireAction('send-thread', () => { handlers.onSendThread(); closeAllMenus(); });
+  wireAction('open-send-to-settings', () => { handlers.onOpenSendToSettings(); closeAllMenus(); });
+
   // View menu toggles
   wireAction('toggle-sync', (item) => {
     const checked = item.getAttribute('data-checked') !== 'true';
