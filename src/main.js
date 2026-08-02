@@ -14,6 +14,7 @@ import { WELCOME_TEXT, EXAMPLES_TEXT } from './core/welcome.js';
 import {
     initFileIO,
     loadFileContent,
+    loadFileIntoNewTab,
     openFile,
     saveFile,
     saveFileAs,
@@ -21,7 +22,6 @@ import {
     onRecentFileSelect,
     removeRecentFile,
     clearRecentFiles,
-    confirmDiscardChanges,
     confirmDiscardChangesForTab,
     syncGlobalsFromActiveTab,
     watchActiveTabFile,
@@ -76,7 +76,11 @@ window.addEventListener('DOMContentLoaded', () => {
     initFileIO(editorAPI);
     initScrollSync(editorAPI, previewAPI);
     initDividerDrag();
-    initKeyboardShortcuts(editorAPI);
+    initKeyboardShortcuts(editorAPI, {
+        onSwitchTab: handleSwitchTab,
+        onCloseTab: handleCloseTab,
+        onNewTab: handleNewTab,
+    });
     initShortcutsModal();
     initRecentFilesModal();
     initSendToSettingsModal();
@@ -311,6 +315,11 @@ async function wireTauriListeners() {
         const { invoke } = await import('@tauri-apps/api/core');
         const initialFile = await invoke('get_initial_file');
         if (initialFile) {
+            // AUTO-017: no dedup/new-tab logic needed here (unlike
+            // open-file-from-args below) -- this runs during startup, before
+            // the user has touched anything, so the single pristine tab
+            // tabsStore.initTabs() created is exactly the right target.
+            // loadFileContent() is already tab-aware since AUTO-016.
             loadFileContent(initialFile.path, initialFile.content);
         }
     } catch (err) {
@@ -352,15 +361,25 @@ async function wireTauriListeners() {
         await listen('tray-quit', () => { requestQuit(); });
 
         // CF2-1: a second launch (single-instance) forwards its file argument
-        // here so it opens in this running instance instead of a duplicate process.
+        // here so it opens in this running instance instead of a duplicate
+        // process. AUTO-017: routed through the tab model -- focuses an
+        // already-open tab for the same path rather than opening a duplicate,
+        // and otherwise opens it in a NEW tab (loadFileIntoNewTab, same as
+        // File->Open) so it never clobbers whatever tab the user has focused.
+        // No discard-guard needed since this can no longer replace existing
+        // tab content.
         await listen('open-file-from-args', async (event) => {
             const path = event.payload;
             if (!path) return;
-            if (!(await confirmDiscardChanges())) return;
             try {
+                const existing = tabsStore.findTabByPath(path);
+                if (existing) {
+                    handleSwitchTab(existing.id);
+                    return;
+                }
                 const { readTextFile } = await import('@tauri-apps/plugin-fs');
                 const content = await readTextFile(path);
-                loadFileContent(path, content);
+                await loadFileIntoNewTab(path, content);
             } catch (e) {
                 console.error('Failed to open forwarded file:', e);
             }

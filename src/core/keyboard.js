@@ -3,6 +3,7 @@
 
 import { config, saveConfig } from './config.js';
 import { openFile, saveFile, saveFileAs, newFile, confirmDiscardChanges } from './file-io.js';
+import * as tabsStore from './tabs.js';
 import { setSyncEnabled } from './sync.js';
 import { setMenuChecked, setActiveFontFamily, setActiveTabSize } from '../ui/toolbar.js';
 import { toggleShortcutsModal, openRecentFilesModal } from '../ui/dialogs.js';
@@ -50,7 +51,7 @@ const LEADER_WINDOW_MS = 2000;
 // ↑/↓ wired to theme cycling long after the user thought they were done.
 const LEADER_CYCLE_REARM_MS = 800;
 
-export function initKeyboardShortcuts( editorAPI ) {
+export function initKeyboardShortcuts( editorAPI, tabHandlers = {} ) {
   _editorAPI = editorAPI;
 
   // Capture-phase handler for the leader chords. It runs before CodeMirror so
@@ -113,6 +114,24 @@ export function initKeyboardShortcuts( editorAPI ) {
     } else if ( ctrl && !shift && e.key === 'p' ) {
       e.preventDefault();
       window.print();
+    } else if ( ctrl && !shift && ( e.key === 't' || e.key === 'T' ) ) {
+      // AUTO-017: new tab. Checked against every existing binding above --
+      // Ctrl+T was unused.
+      e.preventDefault();
+      tabHandlers.onNewTab?.();
+    } else if ( ctrl && !shift && ( e.key === 'w' || e.key === 'W' ) ) {
+      // AUTO-017: close the active tab (routes through the same discard-guard
+      // as clicking its close button). Ctrl+W was unused.
+      e.preventDefault();
+      const activeTabId = tabsStore.getActiveTabId();
+      if ( activeTabId != null ) tabHandlers.onCloseTab?.( activeTabId );
+    } else if ( ctrl && e.key === 'Tab' ) {
+      // AUTO-017: cycle open document tabs. Distinct from CodeMirror's own
+      // plain-'Tab' indent binding (editor.js's keymap), which never sees
+      // Ctrl+Tab -- and distinct from cycleTab() below, which is the
+      // Alt+D leader's unrelated tab-SIZE cycling (2/4 spaces).
+      e.preventDefault();
+      cycleOpenTabs( shift ? -1 : 1, tabHandlers );
     } else if ( e.key === 'F11' ) {
       e.preventDefault();
       toggleFullscreen();
@@ -222,7 +241,19 @@ export function initKeyboardShortcuts( editorAPI ) {
   }, { passive: false } );
 }
 
-// ---- Alt-leader chord helpers (theme / font / tab cycling) ----
+// ---- Document tab cycling (AUTO-017; Ctrl+Tab / Ctrl+Shift+Tab) ----
+
+function cycleOpenTabs( direction, tabHandlers ) {
+  const all = tabsStore.getAllTabs();
+  if ( all.length < 2 ) return;
+  const activeId = tabsStore.getActiveTabId();
+  const idx = all.findIndex( ( t ) => t.id === activeId );
+  if ( idx === -1 ) return;
+  const nextIdx = ( idx + direction + all.length ) % all.length;
+  tabHandlers.onSwitchTab?.( all[ nextIdx ].id );
+}
+
+// ---- Alt-leader chord helpers (theme / font / tab-SIZE cycling) ----
 
 function armLeader( name, durationMs = LEADER_WINDOW_MS ) {
   leader = name;

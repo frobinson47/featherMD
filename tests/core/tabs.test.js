@@ -207,3 +207,69 @@ describe('Tabs -- setActiveTabDirty', () => {
     expect(tabs.getActiveTab().isDirty).toBe(true);
   });
 });
+
+describe('Tabs -- setActiveTabFile', () => {
+  beforeEach(() => {
+    tabs._resetForTests();
+    tabs.initTabs(fakeState('tab1'));
+  });
+
+  it('sets path/isDirty/lineEnding and derives the title from the basename', () => {
+    tabs.setActiveTabFile('C:\\notes\\my-doc.md', true, 'CRLF');
+    const active = tabs.getActiveTab();
+    expect(active.path).toBe('C:\\notes\\my-doc.md');
+    expect(active.title).toBe('my-doc.md');
+    expect(active.isDirty).toBe(true);
+    expect(active.lineEnding).toBe('CRLF');
+  });
+
+  it('regenerates a fresh Untitled title (excluding itself) when path is set back to null', () => {
+    tabs.createTab(fakeState('tab2')); // "Untitled 2", now active
+    tabs.setActiveTabFile('C:\\notes\\a.md', false, 'LF');
+    expect(tabs.getActiveTab().title).toBe('a.md');
+
+    // Reset this same tab back to untitled -- must not collide with "tab1"
+    // (still titled "Untitled") and must not still think of itself as "a.md".
+    tabs.setActiveTabFile(null, false, 'LF');
+    expect(tabs.getActiveTab().title).toBe('Untitled 2');
+  });
+
+  it('does nothing when there is no active tab', () => {
+    tabs._resetForTests();
+    expect(() => tabs.setActiveTabFile('C:\\notes\\a.md', false, 'LF')).not.toThrow();
+  });
+});
+
+describe('Tabs -- findTabByPath', () => {
+  beforeEach(() => {
+    tabs._resetForTests();
+    tabs.initTabs(fakeState('tab1'));
+  });
+
+  it('returns null when no tab has a path', () => {
+    expect(tabs.findTabByPath('C:\\notes\\a.md')).toBeNull();
+  });
+
+  it('returns null for a null/empty path', () => {
+    expect(tabs.findTabByPath(null)).toBeNull();
+    expect(tabs.findTabByPath('')).toBeNull();
+  });
+
+  it('finds a tab by exact path match', () => {
+    tabs.setActiveTabFile('C:\\notes\\a.md', false, 'LF');
+    const found = tabs.findTabByPath('C:\\notes\\a.md');
+    expect(found).toBeTruthy();
+    expect(found.id).toBe(tabs.getActiveTabId());
+  });
+
+  it('matches case-insensitively and across slash direction', () => {
+    tabs.setActiveTabFile('C:\\Notes\\A.MD', false, 'LF');
+    const found = tabs.findTabByPath('c:/notes/a.md');
+    expect(found).toBeTruthy();
+  });
+
+  it('returns null when the path does not match any open tab', () => {
+    tabs.setActiveTabFile('C:\\notes\\a.md', false, 'LF');
+    expect(tabs.findTabByPath('C:\\notes\\b.md')).toBeNull();
+  });
+});

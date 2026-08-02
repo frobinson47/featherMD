@@ -87,3 +87,11 @@
 - Validation completed: `npm run lint` clean. `npm run test` — 362/362 passing (14 net new/rewritten). `forge diff-check` clean apart from the pre-existing untouched `docs/` file; confirmed no `src-tauri/**` changes, matching the task's explicit scope. Live-verified create→close-tab end-to-end in a browser session.
 - Commit hash: none (pending user review)
 - Follow-up notes: No live dirty-tab-close confirmation was exercised in the browser (couldn't reliably type into CodeMirror via the automation tool to make a tab genuinely dirty) — covered instead by 12 unit tests against the exact guard logic. CLI-arg/single-instance file-open paths still replace the active tab in place; that's AUTO-017's explicit job.
+
+## 2026-08-02 — AUTO-017
+
+- Task ID: AUTO-017
+- Summary: Tabs Phase 3 (final) — new keyboard shortcuts (Ctrl+T new tab, Ctrl+W close active tab, Ctrl+Tab/Ctrl+Shift+Tab cycle), added to the Shortcuts modal. Fixed `open-file-from-args` (single-instance file forwarding) to route through the tab model via new `tabsStore.findTabByPath()` (focus an already-open tab) or `loadFileIntoNewTab()` (open in a new tab) instead of clobbering whatever tab was focused. The startup `get_initial_file` path needed no changes — already correct since AUTO-016.
+- Validation completed: `npm run lint` clean. `npm run test` — 379/379 passing (17 new). `forge diff-check` clean apart from the pre-existing untouched `docs/` file. Live-verified all three new shortcuts end-to-end via dispatched `KeyboardEvent`s in the running app.
+- Commit hash: none (pending user review)
+- Follow-up notes: This completes the tabs feature — AUTO-015, AUTO-016, and AUTO-017 are all done. `findTabByPath()` doesn't resolve symlinks (documented scope cut). Remaining roadmap: fork identity/release pipeline (AUTO-011/012) and the remaining risk audits (AUTO-004/006/007/008).

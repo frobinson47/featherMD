@@ -240,7 +240,7 @@ Notes: Depends on AUTO-015 landing first.
 
 ### AUTO-017 — Tabs Phase 3: shortcuts, CLI-arg/single-instance integration, polish
 Priority: P2
-Status: TODO
+Status: DONE
 
 Goal: Add tab-navigation keyboard shortcuts (cycle, close-active-tab, new-tab — checked against existing bindings in `src/core/keyboard.js` for collisions first), and route the CLI-arg / single-instance-forwarded-file handling (`open-file-from-args` in `main.js`, startup `get_initial_file`) through the tab model instead of replacing the current document.
 Why it matters: Without this, launching the app via "Open with FeatherMD" or forwarding a file to an already-running instance would still clobber whatever tab is open, defeating the point of tabs.

@@ -86,6 +86,24 @@ export function getTab(id) {
   return tabs.find((t) => t.id === id) || null;
 }
 
+/**
+ * Find an already-open tab for the given path (AUTO-017), so forwarding a
+ * file from a CLI arg or a second app instance can focus the existing tab
+ * instead of opening a duplicate. Comparison is a simple case-insensitive,
+ * backslash-normalized string match -- it does not resolve symlinks or
+ * junction points to a canonical path, a deliberate scope cut (see
+ * AUTO-017's plan notes) rather than an oversight.
+ */
+export function findTabByPath(path) {
+  if (!path) return null;
+  const normalized = normalizePathForCompare(path);
+  return tabs.find((t) => t.path && normalizePathForCompare(t.path) === normalized) || null;
+}
+
+function normalizePathForCompare(path) {
+  return path.replace(/\\/g, '/').toLowerCase();
+}
+
 export function canCreateTab() {
   return tabs.length < MAX_TABS;
 }
