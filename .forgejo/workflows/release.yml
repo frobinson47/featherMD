@@ -1,0 +1,99 @@
+name: 'publish'
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            bundle-dir: nsis
+            artifact-name: windows
+          - platform: docker
+            bundle-dir: appimage
+            artifact-name: linux
+
+    runs-on: '${{ matrix.platform }}'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies (Linux only)
+        if: matrix.platform == 'docker'
+        run: |
+          apt-get update
+          apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Build Tauri app
+        run: npm run tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Collect bundle artifacts
+        shell: bash
+        run: |
+          mkdir -p collected
+          cp src-tauri/target/release/bundle/${{ matrix.bundle-dir }}/* collected/ 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-${{ matrix.artifact-name }}
+          path: collected/*
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: bundle-*
+          merge-multiple: false
+
+      - name: Lay out artifacts by platform for the manifest builder
+        run: |
+          mkdir -p release/windows release/linux
+          cp artifacts/bundle-windows/* release/windows/ 2>/dev/null || true
+          cp artifacts/bundle-linux/* release/linux/ 2>/dev/null || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Build the merged updater manifest
+        run: node scripts/build-latest-json.mjs release "${{ github.ref_name }}"
+
+      - name: Flatten release assets
+        run: |
+          mkdir -p dist/release
+          find release -maxdepth 2 -type f -exec cp {} dist/release/ \;
+
+      - uses: https://code.forgejo.org/actions/forgejo-release@v2
+        with:
+          direction: upload
+          release-dir: dist/release
+          title: 'Feather MD ${{ github.ref_name }}'
