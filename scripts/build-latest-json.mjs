@@ -22,7 +22,7 @@ if (!artifactsDir || !tagName) {
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const version = pkg.version;
 
-const DOWNLOAD_BASE = `https://forgejo.familytechlab.com/fmrdigital/featherMD/releases/download/${tagName}`;
+const DOWNLOAD_BASE = `https://forgejo.familytechlab.com/frank/featherMD-releases/releases/download/${tagName}`;
 
 const PLATFORM_TARGETS = [
   { dir: 'windows', suffix: '-setup.exe', platformKey: 'windows-x86_64' },

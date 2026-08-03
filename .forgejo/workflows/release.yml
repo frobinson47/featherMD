@@ -101,8 +101,26 @@ jobs:
           mkdir -p dist/release
           find release -maxdepth 2 -type f -exec cp {} dist/release/ \;
 
-      - uses: https://code.forgejo.org/actions/forgejo-release@v2
+      - name: Publish versioned release to frank/featherMD-releases
+        uses: https://code.forgejo.org/actions/forgejo-release@v2
         with:
           direction: upload
+          repo: frank/featherMD-releases
+          token: ${{ secrets.RELEASES_REPO_TOKEN }}
+          tag: ${{ github.ref_name }}
+          sha: main
           release-dir: dist/release
           title: 'Feather MD ${{ github.ref_name }}'
+          override: true
+
+      - name: Publish stable "latest" alias (the updater's actual endpoint)
+        uses: https://code.forgejo.org/actions/forgejo-release@v2
+        with:
+          direction: upload
+          repo: frank/featherMD-releases
+          token: ${{ secrets.RELEASES_REPO_TOKEN }}
+          tag: latest
+          sha: main
+          release-dir: dist/release
+          title: 'Feather MD ${{ github.ref_name }} (latest)'
+          override: true

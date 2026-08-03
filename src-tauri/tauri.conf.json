@@ -25,7 +25,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' asset: http://asset.localhost https: data:; connect-src 'self' https://github.com https://objects.githubusercontent.com https://release-assets.githubusercontent.com https://feather-md-analytics-production.up.railway.app https://discord.com https://discordapp.com https://thread.fmrdigital.dev",
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' asset: http://asset.localhost https: data:; connect-src 'self' https://forgejo.familytechlab.com https://feather-md-analytics-production.up.railway.app https://discord.com https://discordapp.com https://thread.fmrdigital.dev",
       "assetProtocol": {
         "enable": true,
         "scope": [
@@ -73,7 +73,7 @@
       },
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI4NTg1NzQyQ0FCNkQwNUUKUldSZTBMYktRbGRZdUdVamo5TnlHUjN6L1JoUEFsUE8wUnpHY2pQcllrQUErQlNPRTl3VDRpaUcK",
       "endpoints": [
-        "https://github.com/prathamreet/featherMD/releases/latest/download/latest.json"
+        "https://forgejo.familytechlab.com/frank/featherMD-releases/releases/download/latest/latest.json"
       ]
     }
   }
