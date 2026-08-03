@@ -37,6 +37,9 @@
   "bundle": {
     "active": true,
     "createUpdaterArtifacts": true,
+    "publisher": "FMR Digital LLC",
+    "copyright": "© 2026 FMR Digital LLC",
+    "homepage": "https://fmrdigital.dev",
     "targets": [
       "nsis",
       "deb",

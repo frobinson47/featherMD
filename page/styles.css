@@ -1728,6 +1728,16 @@ p {
   color: var(--page-text-muted);
 }
 
+.copyright a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.copyright a:hover {
+  color: var(--page-accent);
+}
+
 @media (max-width: 900px) {
   .footer-container {
     flex-direction: column;
