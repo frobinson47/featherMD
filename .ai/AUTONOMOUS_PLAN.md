@@ -71,7 +71,7 @@ Notes: Directly follows from the Risks section of the project map — state frag
 
 ### AUTO-004 — Written audit of the `fs:scope: "**"` permission grant
 Priority: P2
-Status: TODO
+Status: DONE
 
 Goal: Produce a short written audit (not a code change) explaining why `src-tauri/capabilities/default.json` grants full filesystem scope (`"path": "**"`), what would be lost/broken if it were narrowed, and confirming every other granted permission (`process:allow-exit`, `updater:default`, etc.) is actually used by a corresponding IPC call or frontend feature.
 Why it matters: Broad filesystem access is the single largest security-relevant surface in the app. It's almost certainly necessary for an "open/save any file" editor, but that reasoning currently only lives in a reviewer's head, not in the repo — and `tauri.conf.json`/capabilities changes are already flagged as human-approval-required in `.forge/policy.md`, so this task documents rather than modifies.
@@ -97,7 +97,7 @@ Notes: Highest-priority risk task — XSS in the preview pane is the most severe
 
 ### AUTO-006 — Test coverage for the render-token / LRU cache invalidation pattern
 Priority: P3
-Status: TODO
+Status: DONE
 
 Goal: Add tests for `src/preview/preview.js`'s `renderSeq`/`themeRefreshSeq` monotonic-token pattern and the `mathCache`/`mermaidCache` LRU (`lruGet`/`lruSet`) — verifying a stale in-flight render is correctly abandoned when a newer render starts, and that caches evict correctly at their `MATH_CACHE_MAX`/`MERMAID_CACHE_MAX` bounds.
 Why it matters: This pattern is reused implicitly as a convention ("any new async render path should follow the same seq-check pattern") but isn't itself under test, so a future change could silently break stale-render abortion (visible as flicker/wrong content) with nothing catching it.

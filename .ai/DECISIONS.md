@@ -141,3 +141,37 @@ User explicitly chose "Create Infisical project now" when asked (2026-08-02). Ma
 
 ### Trade-offs accepted
 featherMD is now its own line item in Infisical (a 17th app project) rather than folded into an existing one — correct per policy, but worth remembering it's a new addition to the "~16 existing projects" count documented in the runbook.
+
+---
+
+## 2026-08-03 — AUTO-004: audit of the `fs:scope: "**"` permission grant
+
+### Decision (documentation only — no code changed)
+`src-tauri/capabilities/default.json`'s unrestricted filesystem scope (`{"identifier": "fs:scope", "allow": [{"path": "**"}]}`) is necessary and should NOT be narrowed. featherMD is a general-purpose "open/save any file" editor (File→Open uses a native OS file picker with no path restriction, and Recent Files can point anywhere on disk) — there is no fixed project/workspace directory to scope access to, unlike an IDE with a "project root" concept. Narrowing the scope to, say, the user's home directory or Documents folder would silently break opening files from anywhere else (a USB drive, a network share, `C:\temp`, etc.), which is core, expected functionality for a Markdown editor, not an edge case.
+
+### Permission-by-permission usage check
+Checked every permission in `default.json` against an actual IPC call or frontend Tauri API import in `src/**` / `src-tauri/src/lib.rs`:
+
+| Permission | Used? | Where |
+|---|---|---|
+| `core:default` | Yes | Base command set (app metadata, path resolution) required for the app shell to function at all |
+| `opener:default` | Yes | `src/main.js` link-opening in preview pane (external links via `@tauri-apps/plugin-opener`) |
+| `dialog:default`, `dialog:allow-open`, `dialog:allow-save` | Yes | `src/core/file-io.js` (`open`/`save` dialogs), `src/main.js` (`message`/`ask` confirmation dialogs) |
+| `fs:default`, `fs:allow-read-text-file`, `fs:allow-read-file` | Yes | `src/core/file-io.js`, `src/main.js` (`readTextFile` on open/reload/external-change-detection) |
+| `fs:allow-write-text-file`, `fs:allow-write-file` | Yes | `src/core/file-io.js` (`saveFile`/`saveFileAs`), `src/core/config.js` (`writeTextFile` for `config.json`) |
+| `fs:allow-mkdir` | Yes | `src/core/config.js` (creating the app config directory on first run) |
+| `fs:allow-exists` | Yes | `src/core/config.js` (checking for an existing config file before read/write) |
+| `fs:scope` (`"**"`) | Yes | See Decision above — required for the open-anything editor model |
+| `core:window:allow-set-size` | Yes | `src/platform/window.js` (`setSize` for saved-window-geometry restore) |
+| `core:window:allow-minimize/-maximize/-unmaximize/-close/-is-maximized/-show/-hide/-set-focus` | Yes | `src/platform/window.js`, `src/main.js` (custom title bar controls, tray show/hide, focus-on-restore) |
+| `core:window:allow-destroy` | **No confirmed usage** — no `.destroy()` call found anywhere in `src/**` or `src-tauri/src/lib.rs`. Likely a leftover from an earlier iteration of the custom title bar (close button uses `.close()`, not `.destroy()`). Candidate for removal in a future, explicitly-approved capabilities change — not touched here per this task's read-only scope. |
+| `core:event:default`, `core:event:allow-listen` | Yes | `src/main.js` (`listen()` for tray-quit, open-file-from-args, file-changed-on-disk) |
+| `core:event:allow-emit` | **No confirmed frontend usage** — no JS-side `emit()` call found in `src/**`. All `.emit()` calls found are Rust-side (`src-tauri/src/lib.rs`, backend→frontend), which is a different permission surface than this one (which governs frontend-initiated emits). Same disposition as `allow-destroy`: flagged, not removed. |
+| `updater:default` | Yes | `src/platform/updater.js` (`check()`) |
+| `process:default`, `process:allow-exit` | Yes | `src/platform/window.js` (`exit()` on quit), `src/platform/updater.js` (`relaunch()` after update) |
+
+### Findings requiring follow-up
+`core:window:allow-destroy` and `core:event:allow-emit` have no confirmed usage in the current codebase. Recommend a future AUTO task (human-approved, since `src-tauri/capabilities/**` changes require explicit approval per `.forge/policy.md`) to either remove them or confirm via a live click-through that some UI path exercises them that static grep missed (e.g., a Tauri-internal call path not visible from JS source).
+
+### Trade-offs accepted
+None — this task is documentation-only and made no code changes, so it introduces no risk itself. The two flagged-but-unremoved permissions remain a (very minor) larger-than-necessary attack surface until a follow-up task addresses them.
