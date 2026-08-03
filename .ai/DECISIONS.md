@@ -175,3 +175,52 @@ Checked every permission in `default.json` against an actual IPC call or fronten
 
 ### Trade-offs accepted
 None — this task is documentation-only and made no code changes, so it introduces no risk itself. The two flagged-but-unremoved permissions remain a (very minor) larger-than-necessary attack surface until a follow-up task addresses them.
+
+---
+
+## 2026-08-03 — AUTO-007: non-Windows cfg-gating and CI coverage check
+
+### Static cfg audit (`src-tauri/src/lib.rs`)
+Every `#[cfg(target_os = "windows")]` block is clean: `show_main_window`, `set_webview_memory_low`, `tray_enabled_in_config`, and `setup_tray` are entirely Windows-only functions, called only from inside other `#[cfg(target_os = "windows")]` blocks (never referenced unconditionally). The two `#[tauri::command]`s that ARE compiled on every platform (`set_tray`, `set_webview_memory`) have matching `#[cfg(not(target_os = "windows"))]` arms that consume their otherwise-unused parameters (`let _ = (&app, enabled, &state);`) specifically to avoid unused-variable warnings on non-Windows. No Windows-only symbol leaks into a shared code path. This part of the audit found no issues.
+
+### CI coverage — a real gap found
+`.github/workflows/ci.yml` already has a `rust-check` job with `strategy.matrix.platform: [ubuntu-latest, windows-latest]`, with an inline comment explicitly calling out this exact concern ("the tray code is `#[cfg(target_os = \"windows\")]`, so only a Windows runner actually type-checks it — ubuntu alone would compile it out"). On paper, this is a correctly-designed check.
+
+**But it has never actually run.** `fmrdigital/featherMD` has an active Forgejo push-mirror to `https://github.com/frobinson47/featherMD` (`sync_on_commit: true`, confirmed via the Forgejo API, last synced 2026-08-03T01:01:02Z with no error) — so commits genuinely do reach GitHub. Querying GitHub's public API for that repo's workflow run history (`GET /repos/frobinson47/featherMD/actions/runs`) returns `"total_count": 0` — zero runs, ever. GitHub Actions is evidently not enabled/triggering on the mirror target, so this workflow file is dead weight in practice: it exists, is well-designed, and verifies nothing.
+
+### Answering the task's question
+**Non-Windows Rust compilation is NOT currently verified anywhere that actually executes.** The `.github/workflows/ci.yml` design is correct but inert (0 runs on the mirror target). This environment is Windows-only, so no live cross-compile check was run here either — this is a static-inspection + CI-history finding, not a live build confirmation.
+
+### Follow-up (not implemented here — read-only per task scope, `.github/**` needs human approval anyway)
+Two independent fixes exist, either of which would close the gap:
+1. Enable GitHub Actions on the `frobinson47/featherMD` mirror target (a GitHub-side settings change, not a repo file change).
+2. Since this session (AUTO-012) stood up working Forgejo Actions runners for both Windows (`optimus-windows`) and Linux (`scooby-docker`), add an equivalent cross-platform `cargo check` job to a Forgejo Actions workflow instead — arguably a better fit given the fork's broader move away from GitHub-Actions dependence.
+Neither was implemented under this task; both are candidates for a new, explicitly-scoped AUTO task.
+
+---
+
+## 2026-08-03 — AUTO-008: jsdom DOM-API gap audit beyond `Range`
+
+### Method
+Grepped `src/**` for every layout/measurement/observer API that jsdom is known to implement incompletely or not at all (`IntersectionObserver`, `ResizeObserver`, `MutationObserver`, `matchMedia`, `getBoundingClientRect`, `getClientRects`, `scrollIntoView`, `requestAnimationFrame`, `getComputedStyle`, `elementFromPoint`, `caretPositionFromPoint`/`caretRangeFromPoint`), then checked each call site's actual availability against a plain jsdom instance at the exact version this project pins (`jsdom@26.1.0`), and cross-referenced whether the current test suite exercises that path unmocked (which would produce the "silent stderr noise" pattern AUTO-002 found) or with an existing mock (safe).
+
+### Findings
+| API | Used in `src/**`? | jsdom 26.1.0 has it? | Exercised by tests? | Risk |
+|---|---|---|---|---|
+| `Range.getClientRects`/`getBoundingClientRect` | Yes (CodeMirror internals) | No (AUTO-002's original finding) | Yes | Already polyfilled in `tests/setup.js` |
+| `Element.getBoundingClientRect` | Yes (`src/ui/divider.js`) | **Yes** (unlike `Range`'s version) | Yes | None — jsdom implements this one |
+| `window.matchMedia` | Yes (`src/ui/themes.js`, `src/main.js`) | No | `themes.js`'s usage: yes, via a **per-test-file mock** (`tests/ui/themes.test.js`, `vi.stubGlobal('matchMedia', ...)`). `main.js`'s usage: no test imports `src/main.js` directly, and the call is inside a `DOMContentLoaded` listener that jsdom never fires unprompted, so it's dormant in tests today. | None currently — flagged as latent (see below) |
+| `requestAnimationFrame` | Yes (`src/core/sync.js`, `src/main.js`, `src/preview/preview.js`) | No | `sync.js`'s usage: yes, via a **per-test-file mock** (`tests/core/sync.test.js`, `vi.stubGlobal('requestAnimationFrame', ...)`). `preview.js`'s usage (inside `refreshForThemeChange`'s Mermaid theme-refresh path) and `main.js`'s usage: **no test currently calls `refreshForThemeChange` or imports `main.js`**, so dormant today. | Latent (see below) |
+| `ResizeObserver`, `IntersectionObserver`, `MutationObserver`, `scrollIntoView`, `elementFromPoint`, `caretPositionFromPoint`/`caretRangeFromPoint` | No usage found anywhere in `src/**` | N/A | N/A | None |
+
+### Answering the task's question
+**No further *currently-manifesting* gaps found** — a full `npm run test` run (5 consecutive full-suite runs, watching stderr) shows no new noise beyond what AUTO-002 already fixed. `tests/setup.js` needs no new polyfills today.
+
+### Latent gap (not fixed here — no test exercises it yet, so nothing to fix)
+`src/preview/preview.js`'s `refreshForThemeChange` (the Mermaid theme-refresh path) and `src/main.js`'s two `matchMedia`/`requestAnimationFrame` call sites are not covered by any current test, so their jsdom-incompatible calls never execute today. Both `themes.test.js` and `sync.test.js` already show the correct pattern (a per-test-file `vi.stubGlobal`) for whoever eventually writes tests touching these paths — worth a one-line note in a future task's setup rather than a global `tests/setup.js` polyfill, since a *global* stub would mask the same class of gap in a genuinely new, not-yet-written code path the way a blanket fix tends to.
+
+### A test-robustness finding along the way (not a jsdom gap, but surfaced during this task)
+AUTO-006's new `tests/preview/render-cache.test.js` (added earlier this session) was originally written with a fixed-iteration `setTimeout(0)` flush helper, which proved flaky (~1 failure in 9 full-suite runs) once run as part of the full 23-file parallel suite rather than in isolation — timing assumptions that hold when a file runs alone don't necessarily hold under Vitest's worker-pool contention. Rewrote it to use the same polling `waitFor(predicate, timeout)` pattern already established in `tests/preview/math-mermaid.test.js`, which resolved it (5/5 clean full-suite runs after the fix, plus the earlier 17-ish runs during debugging). Noted here since it's directly relevant to "what causes flaky/wrong test behavior in this test environment" even though it isn't itself a jsdom API gap — a fixed-tick assumption is a different class of test-environment fragility than a missing DOM API, but has the same failure mode (looks fine until run under real conditions).
+
+### Trade-offs accepted
+None — documentation-only for the jsdom gap audit itself (no polyfills were needed); the `render-cache.test.js` timing fix is a test-file-only change with no `src/**` impact.

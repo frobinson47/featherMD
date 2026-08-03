@@ -110,7 +110,7 @@ Notes: Lower priority than AUTO-003/AUTO-005 since this risk is about future reg
 
 ### AUTO-007 — Verify Windows-only Rust `cfg` gating stays cross-platform-clean
 Priority: P2
-Status: TODO
+Status: DONE
 
 Goal: Confirm that `src-tauri/src/lib.rs`'s `#[cfg(target_os = "windows")]`-gated code (tray, webview-memory trimming) leaves a cleanly compiling, correctly-behaving non-Windows build — i.e. every `#[cfg(not(target_os = "windows"))]` branch exists where needed and no Windows-only symbol leaks into the shared path.
 Why it matters: Development happens on Windows (this environment), so a non-Windows compile break in cfg-gated code could go unnoticed for a long time. The project explicitly supports non-Windows builds (per the existing cfg structure) — this task verifies that support hasn't silently rotted.
@@ -123,7 +123,7 @@ Notes: If this surfaces a real CI gap, the fix (adding a CI job) falls under `.g
 
 ### AUTO-008 — Broaden jsdom DOM-API gap audit beyond `Range`
 Priority: P3
-Status: TODO
+Status: DONE
 
 Goal: Following AUTO-002's discovery that jsdom lacks `Range.prototype.getClientRects`/`getBoundingClientRect`, proactively check whether CodeMirror 6 or other `src/**` code paths call other DOM layout/measurement APIs jsdom doesn't implement (e.g. `Element.getClientRects`, `IntersectionObserver`, `ResizeObserver`) that could be silently caught-and-swallowed elsewhere the way the `Range` gap was, masking future stderr noise or subtly wrong test behavior in files other than `tests/editor/editor.test.js`.
 Why it matters: AUTO-002 fixed one instance of this class of gap; there's no guarantee it's the only one. A systematic check now is cheaper than discovering the next one as unexplained flaky/noisy test output later.

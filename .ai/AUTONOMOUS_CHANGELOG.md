@@ -119,3 +119,19 @@
 - Validation completed: `npm run lint` clean. `npm run test` — 379/379 passing, no regression. Real end-to-end validation: the 8th tag push (`v1.10.5-fmr-pipeline-test8`) built, signed, and published successfully; confirmed anonymously via curl that both `latest.json` and the Windows installer are fetchable with no auth, exactly matching what the shipped app's updater will do.
 - Commit hash: 290a4bb (endpoint repoint); DECISIONS.md/STATE.md finalization pending its own commit
 - Follow-up notes: This completes both halves of the user's original fork-independence motivation (AUTO-011 identity + AUTO-012 pipeline). The `ForgejoRunner` Windows service now runs as a real Administrator account rather than LocalSystem — a deliberate, documented trade-off, not an oversight. No real (non-test) release has been cut yet — the pipeline is proven but hasn't been used for an actual version bump.
+
+## 2026-08-03 — AUTO-004 + AUTO-006
+
+- Task ID: AUTO-004, AUTO-006
+- Summary: AUTO-004 — written audit of `fs:scope: "**"` (documentation only): confirmed necessary for the open-anywhere editor model, checked every other capability against an actual usage site, flagged `core:window:allow-destroy` and `core:event:allow-emit` as having no confirmed usage. AUTO-006 — new `tests/preview/render-cache.test.js` covering the `renderSeq` monotonic-token pattern and the `mermaidCache` LRU (reuse + eviction at `MERMAID_CACHE_MAX`), driven indirectly through `renderMarkdown` since neither is exported.
+- Validation completed: `npm run lint` clean. `npm run test` — 384/384 passing (379 baseline + 5 new). `forge diff-check` clean apart from the pre-existing untouched `docs/` file.
+- Commit hash: 14ce9b0
+- Follow-up notes: The two flagged-unused capabilities need a separate, human-approved follow-up task to actually remove (or confirm needed) — `src-tauri/capabilities/**` changes require explicit approval.
+
+## 2026-08-03 — AUTO-007 + AUTO-008
+
+- Task ID: AUTO-007, AUTO-008
+- Summary: AUTO-007 — static cfg audit of `src-tauri/src/lib.rs` found no issues (every Windows-only function only called from Windows-gated code). CI-coverage check found a real gap: `.github/workflows/ci.yml`'s correctly-designed cross-platform matrix has never actually run (0 workflow runs ever on the GitHub push-mirror target, confirmed via GitHub's public API, despite the mirror actively syncing). AUTO-008 — broadened the jsdom gap audit beyond `Range`: no currently-manifesting gaps found (5 consecutive clean full-suite runs), but surfaced and fixed a real flakiness bug in AUTO-006's brand-new `render-cache.test.js` (a fixed-tick flush helper that worked in isolation but flaked under full-suite parallelism; rewrote to the existing `waitFor`-polling pattern already used in `math-mermaid.test.js`).
+- Validation completed: `npm run lint` clean. `npm run test` — 384/384 passing, run 5+ times consecutively to confirm the flakiness fix actually held. `forge diff-check` clean apart from the pre-existing untouched `docs/` file.
+- Commit hash: none (pending user review)
+- Follow-up notes: This closes out the entire v1 Forge roadmap — every AUTO task is now DONE. Three documented-but-unfixed findings remain for future explicitly-scoped tasks: the two unused capabilities (AUTO-004), and the dormant GitHub Actions CI gap (AUTO-007) — none are blockers, all need human-approved follow-up since they touch approval-required paths.
