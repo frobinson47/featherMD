@@ -175,7 +175,7 @@ Notes: Approved by user 2026-08-01. Should land before AUTO-012 (which depends o
 
 ### AUTO-012 — Forgejo release pipeline and repointed update feed
 Priority: P1
-Status: TODO
+Status: DONE
 
 Goal: Build a Forgejo Actions workflow that builds, signs, and publishes Windows + Linux Tauri binaries plus a `latest.json` to a Forgejo Release on `forgejo.familytechlab.com/fmrdigital/featherMD` on tag push, then repoint `tauri.conf.json`'s `updater.endpoints` to that feed and widen the CSP `connect-src` to allow it.
 Why it matters: The app's auto-updater (`src/platform/updater.js`) is fully implemented but currently points at upstream's GitHub release feed (`.github/workflows/release.yml` builds/signs to GitHub Releases via `tauri-apps/tauri-action`). Without repointing it, the fork's updater would either do nothing useful or (before AUTO-011) risk pulling upstream's build over this fork's changes.

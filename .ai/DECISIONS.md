@@ -68,6 +68,40 @@ Runner `optimus-windows` registered instance-wide with labels `windows:host`, `s
 
 ---
 
+## 2026-08-02 — AUTO-012 completion: NSIS-under-LocalSystem fix, Linux runner relocation, public releases repo
+
+Three further problems surfaced during real tag-push testing, each requiring a decision:
+
+### 1. NSIS bundling failed under the LocalSystem service account
+`makensis.exe` (already proven to work when run interactively as Administrator) failed with `Unable to start child process, error 0x2` every time it ran under the `ForgejoRunner` service's default `LocalSystem` account — a Session-0-isolation-shaped problem. Tried the "Interact with Desktop" service flag first (free, no credentials needed) — did not fix it. User then set the service's logon account to the real `Administrator` account via `services.msc` (entering the password themselves, never through Claude) — this fixed it; NSIS bundling now succeeds under the service exactly as it does interactively.
+**Trade-off accepted**: the release pipeline now depends on the `ForgejoRunner` service running as a real user account rather than the more isolated `LocalSystem` — a slightly larger blast radius if that service were ever compromised, accepted because there was no lower-privilege fix found.
+
+### 2. hetzner-1 (fmrdigital) OOM-killed the Linux build
+See the earlier decision above — resolved by standing up `scooby-docker`, a new runner on Scooby (11GB, mostly idle) rather than fighting for memory on a production box already running Authentik/Infisical/WordPress. `build-linux`/`release` now target `runs-on: linux` (Scooby's label), not `docker` (hetzner-1's).
+
+### 3. featherMD's private repo blocked anonymous release downloads
+### Decision
+Publish releases to a new, separate, genuinely public repo — `frank/featherMD-releases` (personal account, not the `fmrdigital` org) — containing only built binaries and `latest.json`, never source. `fmrdigital/featherMD` stays private.
+
+### Context
+The shipped app's auto-updater runs on end-user machines with no Forgejo credentials, so release assets must be anonymously fetchable. Tried making `featherMD` itself public first (`PATCH .../repos/fmrdigital/featherMD {"private": false}`) — this actually resulted in `"internal": true`, not truly public, because **the `fmrdigital` organization itself is private**, and Forgejo caps every repo under a private org to at most "internal" (logged-in instance users only) regardless of the individual repo's own visibility setting. Confirmed via anonymous curl (404) even after the PATCH reported `"private":false`. Reverted immediately — the only way to truly make `featherMD` public would be changing the whole org's visibility, which would also expose every other fmrdigital repo (hookhouse-pro, GainsLedger, CommishHub, fleetwright-cloud, etc.) — far outside what was asked.
+
+### Alternatives considered
+1. Make `fmrdigital/featherMD` itself public — blocked by the org-visibility cap above; would have meant either accepting "internal" (still not anonymously fetchable) or making the whole org public (rejected, too broad).
+2. New public repo under the personal `frank` account (selected) — sidesteps the org's visibility policy entirely since it's not owned by `fmrdigital`.
+3. Host the feed on non-Forgejo infra (e.g., an R2/object-storage bucket) — more new infrastructure than necessary given option 2 works with tools already in place.
+
+### Reasoning
+User explicitly chose this option once the org-visibility blocker was explained (2026-08-02).
+
+### Trade-offs accepted
+Releases now live in a second repo, requiring a second, purpose-scoped Forgejo access token (`RELEASES_REPO_TOKEN`, `write:repository` on `frank/featherMD-releases` only, distinct from the interactive `FORGEJO_TOKEN`) stored as a repo secret on `fmrdigital/featherMD`. The pipeline publishes to **two** tags on the releases repo per run — the real version tag (for history/browsing) and a fixed `latest` tag with `override: true` (the actual, stable URL the updater endpoint points at) — because this Forgejo version has no GitHub-style `/releases/latest/download/` alias (confirmed 404 via a throwaway asset test before building this workaround).
+
+### Final validation (2026-08-02)
+A full real tag push (`v1.10.5-fmr-pipeline-test8`) built, signed, and published successfully on the first attempt after all of the above fixes landed. Confirmed anonymously (no auth header) via curl: `latest.json` at `https://forgejo.familytechlab.com/frank/featherMD-releases/releases/download/latest/latest.json` returns valid JSON with both platform signatures, and the Windows installer download returns `200`. `tauri.conf.json`'s `updater.endpoints` now points at exactly that URL; CSP `connect-src` narrowed to `forgejo.familytechlab.com` (GitHub entries removed). AUTO-012 is DONE.
+
+---
+
 ## 2026-08-01 — Tabs feature scope: capped tabs, single-file watcher only
 
 ### Decision
