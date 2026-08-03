@@ -83,7 +83,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  height: 32px;
+  height: var(--tabbar-height);
   padding: 0 6px;
   background: var(--bg-secondary);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
